@@ -1,0 +1,9 @@
+{
+	"id": "shard",
+	"name": "Shard",
+	"version": "0.1.0",
+	"minAppVersion": "1.13.0",
+	"description": "An action-focused bar to find notes, run commands, and create notes from models.",
+	"author": "mathcrln",
+	"isDesktopOnly": false
+}

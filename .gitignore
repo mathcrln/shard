@@ -1,0 +1,23 @@
+node_modules
+dist
+*.tsbuildinfo
+.DS_Store
+.claude/**
+
+# vscode
+.vscode
+
+# Intellij
+*.iml
+.idea
+
+# Compiled bundle, attached to GitHub releases instead
+main.js
+
+# Sourcemaps
+*.map
+
+# Obsidian plugin data
+data.json
+
+.local
