@@ -1,6 +1,7 @@
 export interface ShardSettings {
 	searchHeadings: boolean;
 	commandsOnOpen: boolean;
+	unifiedSearch: boolean;
 	recentNotes: number;
 }
 
@@ -9,6 +10,7 @@ export const MAX_RECENT_NOTES = 50;
 const DEFAULTS: ShardSettings = {
 	searchHeadings: true,
 	commandsOnOpen: true,
+	unifiedSearch: false,
 	recentNotes: 10,
 };
 
@@ -25,6 +27,7 @@ export class Settings {
 		return new Settings({
 			searchHeadings: boolean(record['searchHeadings'], DEFAULTS.searchHeadings),
 			commandsOnOpen: boolean(record['commandsOnOpen'], DEFAULTS.commandsOnOpen),
+			unifiedSearch: boolean(record['unifiedSearch'], DEFAULTS.unifiedSearch),
 			recentNotes: Settings.isRecentNotes(record['recentNotes']) ? record['recentNotes'] : DEFAULTS.recentNotes,
 		});
 	}
@@ -39,6 +42,10 @@ export class Settings {
 
 	get commandsOnOpen(): boolean {
 		return this.values.commandsOnOpen;
+	}
+
+	get unifiedSearch(): boolean {
+		return this.values.unifiedSearch;
 	}
 
 	get recentNotes(): number {
