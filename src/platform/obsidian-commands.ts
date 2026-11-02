@@ -8,12 +8,14 @@ type Registry = {
 
 type Host = { workspace: Pick<App['workspace'], 'activeEditor'>; commands?: Registry };
 
+const PALETTE_COMMANDS = new Set(['shard:open-bar', 'shard:open-files', 'shard:open-commands']);
+
 export class ObsidianCommands implements Commands {
 	constructor(private readonly app: Host) {}
 
 	list() {
 		return (this.registry?.listCommands() ?? [])
-			.filter((command) => command.id !== 'shard:open-bar' && this.available(command))
+			.filter((command) => !PALETTE_COMMANDS.has(command.id) && this.available(command))
 			.map((command) => ({ id: command.id, name: command.name, run: () => this.run(command.id) }));
 	}
 

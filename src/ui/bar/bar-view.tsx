@@ -8,11 +8,13 @@ import { labelOf } from '@/ui/bar/shortcut';
 type Props = {
 	bar: BarState;
 	mac: boolean;
+	busy?: boolean;
+	error?: string | null;
 	onChange: () => void;
 	onRun: () => void;
 };
 
-export function BarView({ bar, mac, onChange, onRun }: Props) {
+export function BarView({ bar, mac, busy = false, error = null, onChange, onRun }: Props) {
 	const input = useRef<HTMLInputElement>(null);
 	const results = useRef<HTMLDivElement>(null);
 	const id = useId();
@@ -24,15 +26,19 @@ export function BarView({ bar, mac, onChange, onRun }: Props) {
 			? `${listId}-${bar.position}`
 			: undefined;
 
-	useEffect(() => input.current?.focus({ preventScroll: true }), []);
+	useEffect(() => {
+		input.current?.focus({ preventScroll: true });
+		input.current?.setSelectionRange(bar.query.length, bar.query.length);
+	}, [bar.focusRevision]);
 	useEffect(() => {
 		results.current?.querySelector('[aria-selected="true"]')?.scrollIntoView?.({ block: 'nearest' });
-	}, [bar.position, bar.query]);
+	}, [bar.position, bar.query, bar.mode]);
 
 	const change = (update: () => void) => {
 		update();
 		onChange();
 	};
+	const searchLabel = bar.mode === 'files' ? 'files' : bar.mode === 'commands' ? 'commands' : 'files or commands';
 
 	return (
 		<>
@@ -43,18 +49,26 @@ export function BarView({ bar, mac, onChange, onRun }: Props) {
 					className='shard-input'
 					type='text'
 					role='combobox'
-					aria-label='Search notes and commands'
+					aria-label={`Search ${searchLabel}`}
 					aria-autocomplete='list'
 					aria-expanded={true}
 					aria-controls={bar.actionsOpen ? actionsId : listId}
 					aria-activedescendant={selectedId}
-					placeholder='Search notes or run a command…'
+					placeholder={
+						bar.mode === 'files'
+							? 'Search files…'
+							: bar.mode === 'commands'
+								? 'Search commands…'
+								: 'Search files or commands…'
+					}
 					spellCheck={false}
 					autoComplete='off'
 					autoCapitalize='off'
 					autoCorrect='off'
 					enterKeyHint='go'
 					value={bar.query}
+					readOnly={busy}
+					aria-busy={busy}
 					onChange={(event) => change(() => bar.type(event.target.value))}
 				/>
 			</header>
@@ -64,18 +78,24 @@ export function BarView({ bar, mac, onChange, onRun }: Props) {
 				</div>
 				{bar.actionsOpen && <ActionsPanel bar={bar} id={actionsId} mac={mac} onChange={onChange} onRun={onRun} />}
 			</div>
+			{error && (
+				<p className='shard-palette-error' role='alert'>
+					{error}
+				</p>
+			)}
 			<footer className='shard-footer'>
 				<span className='shard-brand'>Shard</span>
 				{bar.highlighted && (
 					<div className='shard-footer-actions'>
-						<button className='shard-footer-button shard-primary-action' onClick={onRun}>
-							{bar.actionsOpen ? 'Run action' : bar.highlighted.group === 'Commands' ? 'Run command' : 'Open'}{' '}
+						<button className='shard-footer-button shard-primary-action' disabled={busy} onClick={onRun}>
+							{busy ? 'Creating…' : bar.actionsOpen ? 'Run action' : (bar.highlighted.actions[0]?.name ?? 'Open')}{' '}
 							<kbd>↵</kbd>
 						</button>
 						<span className='shard-divider' aria-hidden='true' />
 						<button
 							className='shard-footer-button'
 							aria-label='Actions'
+							disabled={busy}
 							onPointerDown={(event) => event.preventDefault()}
 							aria-expanded={bar.actionsOpen}
 							aria-controls={bar.actionsOpen ? actionsId : undefined}

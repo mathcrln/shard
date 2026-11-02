@@ -16,18 +16,20 @@ export function ResultList({ bar, id, onChange, onRun }: Props) {
 				<span className='shard-empty-icon'>
 					<BarIcon name='search' />
 				</span>
-				<strong>{bar.query.trim() ? 'No results found' : 'Find your next thought'}</strong>
-				<p>{bar.query.trim() ? 'Try another name or command.' : 'Search for a note or command.'}</p>
+				<strong>No results</strong>
 			</div>
 		);
 	}
 
 	let position = 0;
-	return bar.groups.map((section) => (
-		<div className='shard-group' role='group' aria-label={section.group} key={section.group}>
-			<div className='shard-group-heading' aria-hidden='true'>
-				{section.group} <span>{section.results.length}</span>
-			</div>
+	const sections = bar.mode === 'unified' && bar.query.trim() ? [{ group: null, results: bar.results }] : bar.groups;
+	return sections.map((section) => (
+		<div className='shard-group' role='group' aria-label={section.group ?? 'Results'} key={section.group ?? 'Results'}>
+			{section.group && (
+				<div className='shard-group-heading' aria-hidden='true'>
+					{section.group} <span>{section.results.length}</span>
+				</div>
+			)}
 			{section.results.map((result) => {
 				const index = position++;
 				const selected = index === bar.position;
@@ -50,7 +52,9 @@ export function ResultList({ bar, id, onChange, onRun }: Props) {
 						}}
 					>
 						<span className='shard-tile' aria-hidden='true'>
-							{result.group === 'Commands' ? (
+							{result.group === 'Models' ? (
+								<BarIcon name='create' />
+							) : result.group === 'Commands' ? (
 								<BarIcon name='command' />
 							) : result.group === 'Headings' ? (
 								<BarIcon name='heading' />

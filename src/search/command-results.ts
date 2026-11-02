@@ -1,8 +1,13 @@
 import type { Commands } from '@/platform/commands';
+import { compareRankedResults, type RankedResult } from '@/search/ranked-result';
 import type { Result } from '@/search/result';
 import { Matcher } from '@/text/matcher';
 
 export function commandResults(commands: Commands, query: string, limit: number): Result[] {
+	return rankedCommandResults(commands, query, limit).map(({ result }) => result);
+}
+
+export function rankedCommandResults(commands: Commands, query: string, limit: number): RankedResult[] {
 	const matcher = Matcher.of(query);
 	return commands
 		.list()
@@ -16,9 +21,13 @@ export function commandResults(commands: Commands, query: string, limit: number)
 				ranges: match.ranges,
 				actions: [{ name: 'Run command', run: () => command.run() }],
 			};
-			return [{ score: match.score, result }];
+			return [
+				{
+					score: match.score,
+					result,
+				},
+			];
 		})
-		.sort((a, b) => b.score - a.score || a.result.title.localeCompare(b.result.title))
-		.slice(0, limit)
-		.map(({ result }) => result);
+		.sort(compareRankedResults)
+		.slice(0, limit);
 }

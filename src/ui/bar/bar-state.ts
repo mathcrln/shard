@@ -1,18 +1,31 @@
 import type { Search } from '@/queries/search';
+import type { ModelCreator } from '@/models/note-creation';
 import type { Action, Shortcut } from '@/search/action';
 import type { Group, Result } from '@/search/result';
+import { searchModeFor, type SearchMode } from '@/search/mode';
 
 export type Section = { group: Group; results: Result[] };
 
 export class BarState {
 	query = '';
+	focusRevision = 0;
 	results: readonly Result[] = [];
+	private readonly baseMode: SearchMode;
 
 	private index = 0;
 	private actionIndex: number | null = null;
+	private creator: ModelCreator | undefined;
 
-	constructor(private readonly search: Pick<Search, 'find'>) {
-		this.type('');
+	constructor(
+		private readonly search: Pick<Search, 'find'>,
+		options: { query?: string; unifiedSearch?: boolean } = {}
+	) {
+		this.baseMode = options.unifiedSearch ? 'unified' : 'files';
+		this.type(options.query ?? '');
+	}
+
+	get mode(): SearchMode {
+		return searchModeFor(this.query, this.baseMode);
 	}
 
 	get position(): number {
@@ -57,9 +70,19 @@ export class BarState {
 
 	type(query: string): void {
 		this.query = query;
-		this.results = this.search.find(query);
+		this.results = this.search.find(query, { mode: this.baseMode, creator: this.creator });
 		this.index = 0;
 		this.closeActions();
+	}
+
+	useCreator(creator: ModelCreator): void {
+		this.creator = creator;
+		this.type(this.query);
+	}
+
+	compose(query: string): void {
+		this.type(query);
+		this.focusRevision++;
 	}
 
 	next(): void {
@@ -117,7 +140,7 @@ export class BarState {
 		if (!action) return false;
 
 		this.closeActions();
-		beforeRun?.();
+		if (!action.keepOpen) beforeRun?.();
 		action.run();
 
 		return true;

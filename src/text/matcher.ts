@@ -4,12 +4,17 @@ import { mergeRanges, type Range } from '@/text/range';
 export type Match = { score: number; ranges: Range[] };
 
 type Found = { score: number; ranges: Range[] };
+const EXACT_TEXT_BONUS = 200;
 
 export class Matcher {
-	private constructor(private readonly words: readonly string[]) {}
+	private constructor(
+		private readonly words: readonly string[],
+		private readonly fullQuery: string
+	) {}
 
 	static of(query: string): Matcher {
-		return new Matcher(Folded.of(query).text.split(/\s+/).filter(Boolean));
+		const foldedQuery = Folded.of(query).text.trim().replace(/\s+/gu, ' ');
+		return new Matcher(foldedQuery.split(/\s+/).filter(Boolean), foldedQuery);
 	}
 
 	get isEmpty(): boolean {
@@ -29,9 +34,15 @@ export class Matcher {
 		}
 
 		return {
-			score: founds.reduce((total, found) => total + found.score, 0) / founds.length,
+			score:
+				founds.reduce((total, found) => total + found.score, 0) / founds.length +
+				(this.normalizedText(folded.text) === this.fullQuery ? EXACT_TEXT_BONUS : 0),
 			ranges: mergeRanges(founds.flatMap((found) => found.ranges.map((range) => folded.original(range)))),
 		};
+	}
+
+	private normalizedText(value: string): string {
+		return value.trim().replace(/\s+/gu, ' ');
 	}
 }
 

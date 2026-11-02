@@ -7,6 +7,24 @@ type Props = { result: Result; onActions: (event: MouseEvent) => void };
 export function NativeResult({ result, onActions }: Props) {
 	return (
 		<>
+			<span
+				className='suggestion-icon'
+				aria-hidden='true'
+				ref={(element) => {
+					if (element) {
+						setIcon(
+							element,
+							result.group === 'Models'
+								? 'plus'
+								: result.group === 'Commands'
+									? 'command'
+									: result.group === 'Headings'
+										? 'heading'
+										: 'file-text'
+						);
+					}
+				}}
+			/>
 			<div className='suggestion-content'>
 				<div className='suggestion-title'>
 					{segmentsOf(result.title, result.ranges).map((segment, index) => (

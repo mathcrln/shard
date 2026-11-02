@@ -1,4 +1,15 @@
-export type IconName = 'search' | 'heading' | 'open' | 'tab' | 'split' | 'link' | 'command' | 'close' | 'more' | 'back';
+export type IconName =
+	| 'search'
+	| 'heading'
+	| 'open'
+	| 'tab'
+	| 'split'
+	| 'link'
+	| 'command'
+	| 'close'
+	| 'more'
+	| 'back'
+	| 'create';
 
 type Props = { name: IconName };
 
@@ -31,6 +42,7 @@ export function BarIcon({ name }: Props) {
 				</>
 			)}
 			{name === 'back' && <path d='m14 6-6 6 6 6' />}
+			{name === 'create' && <path d='M12 5v14M5 12h14' />}
 			{name === 'close' && <path d='m6 6 12 12M6 18 18 6' />}
 			{name === 'command' && <path d='M9 9V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V9' />}
 			{name === 'open' && <path d='M7 17 17 7M7 7h10v10' />}
