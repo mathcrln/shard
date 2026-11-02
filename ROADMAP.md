@@ -2,23 +2,17 @@
 
 ## Now
 
-1. A switcher that beats QuickSwitcher++: diacritic-insensitive search, good ranking, highlighted matches, actions on every result. See [search](docs/requirements/search.md) and [bar](docs/requirements/bar.md).
+1. Dependable file and command search: filename and alias matching, diacritic-safe highlights, result actions, `>` for commands, and an optional unified search setting. See [search](docs/requirements/search.md), [bar](docs/requirements/bar.md), and [commands](docs/requirements/commands.md).
 
 ## Next
 
-1. Every command in the bar, grouped by plugin, ranked by use. See [commands](docs/requirements/commands.md).
-2. Prefixes to narrow the search: `>`, `#`, `@`. See [search](docs/requirements/search.md#prefixes).
-3. Pin, hide, and rename commands. See [commands](docs/requirements/commands.md#organizing).
+1. User-defined models that list and search their notes through folder, tag, and property rules, with property filters also available in global search. See [models](docs/requirements/models.md#membership) and [search](docs/requirements/search.md#property-filters).
+2. Model-based creation from existing templates, with configurable destinations, filenames, defaults, creation forms, and `games create [title]`. See [models](docs/requirements/models.md#creating) and [intents](docs/requirements/intents.md).
+3. Optional creation and modification timestamps across the vault, including notes without a model. See [timestamps](docs/requirements/timestamps.md).
 
 ## Later
 
-1. Models: define a kind of note once and create it from the bar. See [models](docs/requirements/models.md).
-2. Intents: `person new Ada Lovelace` runs a model in one line. See [intents](docs/requirements/intents.md).
-3. Scoped drill-down into a plugin's commands.
-4. Mobile polish.
-
-## Done
-
-Nothing yet.
-
-See [`docs/requirements/`](docs/requirements/) for the rules behind each item.
+1. Richer discovery through headings, tags, saved Bases view names, configurable desktop result images, and command ranking and organization. See [search](docs/requirements/search.md), [bar](docs/requirements/bar.md#result-images), and [commands](docs/requirements/commands.md).
+2. Contextual model actions and relation pickers for editing note properties. See [models](docs/requirements/models.md#relations-and-contextual-editing) and [commands](docs/requirements/commands.md#contextual-model-commands).
+3. Optional shared virtual content on notes matching model rules. See [virtual content](docs/requirements/virtual-content.md).
+4. Model creation variants and generated templates or Bases, subject to the open decisions in [models](docs/requirements/models.md#open-proposals).

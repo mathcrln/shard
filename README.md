@@ -1,12 +1,15 @@
 # Shard
 
-An action-focused bar for Obsidian. Find a note, run a command, or create a note from a model, all from one input.
+An action-focused bar for Obsidian, built around user-defined note models.
 
 ## Features
 
 - Search that ignores diacritics: `eleve` finds `élève`.
-- Notes, aliases, headings, and tags in one list.
+- Find notes by filename, alias, or heading.
+- Search commands with `>`, or include them in normal searches through unified search.
 - Actions on every result.
+- Define models inline in settings and preview their matching notes.
+- Search a model's notes and create notes from its template inside the palette.
 
 ## Install
 
@@ -16,7 +19,44 @@ Shard is not released yet. Run `pnpm build`, then copy `main.js`, `manifest.json
 
 Bind a hotkey to **Shard: Open bar** in **Settings → Hotkeys**.
 
+Use **Shard: Open files** for normal search and **Shard: Open commands** to open with `>` already entered. Assign your preferred shortcuts, such as **⌘O** and **⌘P**, through Obsidian's hotkey settings. Shard assigns no shortcuts by default.
+
+Normal input searches files. A leading `>` searches commands only; removing it returns to normal search.
+
+Enable **Settings → Shard → Search preferences → Unified search** to include commands in normal searches. This setting is off by default. **Show commands when the bar opens** controls the initial command suggestions when unified search is enabled; `>` always lists commands.
+
+Unified searches mix files, headings, and commands in one relevance-ranked list. Exact matches take priority; recently opened notes receive a smaller ranking boost.
+
 Select a result's actions button or use **Ctrl+K** (**⌘K** on macOS) for the highlighted result's actions.
+
+## Models
+
+Open **Settings → Shard** and select **Add model**. Enter a name, then add conditions directly inside its accordion. Valid edits save automatically; no separate editor or save dialog is needed.
+
+The model's name is its search term. Optional **Keywords** provide extra terms, such as `games` and `videogames` for a model named Game. Add a keyword with Enter or a comma.
+
+Conditions can match folders, tags, or frontmatter properties. Choose **All conditions** or **Any condition** when combining several conditions. **Options** exposes inversion and whether to include subfolders or subtags.
+
+For a Game model, add a property condition with the property name `in`, match **contains**, and value `[[Games]]`. This matches notes whose `in` list contains that link, regardless of their folder.
+
+Matching notes appear in a scrollable list directly below completed conditions. The list refreshes as saved conditions or cached note metadata change. Select a note to open it.
+
+Model definitions are saved with Shard's vault-local plugin settings. Cross-device synchronization follows your plugin-settings sync configuration. Renaming or deleting a model definition does not modify its notes.
+
+Under **Creation**, optionally set a **Folder** override (`/` for the vault root) and a Markdown **Template** by note name, vault path, or `[[wikilink]]`. The `.md` extension is optional. An empty folder follows Obsidian's default new-note location, including its current-folder option. The creation folder is independent of membership conditions.
+
+For a model with the keyword `games`:
+
+| Input                            | Behavior                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------- |
+| `games`                          | Lists matching notes and offers **Create Game**.                          |
+| `games horizon`                  | Searches only matching game notes.                                        |
+| `games create`                   | Keep typing the title in the palette input.                               |
+| `games create Horizon Zero Dawn` | Enter creates the note immediately using the model's folder and template. |
+
+Selecting **Create Game** completes `games create ` in the existing input. There is no title form or confirmation screen. Enter submits a supplied title; typing or dismissing the palette creates no note. A successful creation opens the new note; an existing filename is never overwritten.
+
+Templates preserve their Markdown and frontmatter, including empty properties. Supported placeholders are `{{title}}`, `{{date}}`, `{{date:YYYY-MM-DD}}`, `{{time}}`, and `{{time:HH:mm}}`. Templater expressions and arbitrary attribute placeholders are not supported. Attribute forms, filename patterns, and command-line overrides remain planned.
 
 ## Development
 

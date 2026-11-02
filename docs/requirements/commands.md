@@ -27,10 +27,27 @@ Commands are the actions Obsidian and its plugins register.
 - [ ] `CMD-012` The user can pin a command so it is listed first.
 - [ ] `CMD-013` The user can hide a command so it is never listed.
 - [ ] `CMD-014` The user can give a command an alias that also finds it.
-- [ ] `CMD-015` The user can see and undo what they hid.
+- [ ] `CMD-019` The user can view hidden commands.
+- [ ] `CMD-020` The user can restore a hidden command to search results.
 - [?] `CMD-016` Typing a plugin's name followed by a space narrows the list to that plugin's commands.
 
 ## Stability
 
 - [ ] `CMD-017` Pins, hides, and aliases are kept by command id and survive restarts.
 - [ ] `CMD-018` A pin, hide, or alias for a command that no longer exists is kept, not deleted.
+
+## Contextual model commands
+
+- [ ] `CMD-021` A model can expose commands applicable to its notes.
+- [ ] `CMD-022` The active note's model is determined from the user's membership rules.
+- [ ] `CMD-023` The user can enable or disable contextual model commands independently of contextual result suggestions.
+- [ ] `CMD-024` The user can choose a label for a model's contextual command.
+- [ ] `CMD-025` A contextual command acts on the note active before the bar opened.
+- [ ] `CMD-026` Disabling contextual commands leaves global Obsidian command search available.
+- [?] `CMD-027` When the active note matches several models, commands from every matching model are offered together.
+
+## Retired identifiers
+
+| Identifier | Reason                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------- |
+| `CMD-015`  | Viewing hidden commands and restoring them are specified separately by CMD-019 and CMD-020. |
