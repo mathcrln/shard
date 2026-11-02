@@ -1,84 +1,126 @@
-import { PluginSettingTab } from 'obsidian';
-import type { Plugin, SettingDefinitionGroup, SettingDefinitionItem } from 'obsidian';
-import { MAX_RECENT_NOTES, Settings } from '@/models/plugin-settings';
+import { Component, Notice, PluginSettingTab } from 'obsidian';
+import type { Plugin, SettingDefinitionItem } from 'obsidian';
+import { createElement } from 'react';
+import type { ReactNode } from 'react';
+import { createRoot } from 'react-dom/client';
+import type { NoteModel } from '@/models/note-model';
+import type { NoteModels } from '@/models/note-models';
+import { Settings } from '@/models/plugin-settings';
 import type { ShardSettings } from '@/models/plugin-settings';
-import { Bindings } from '@/ui/settings/shared/bindings';
-import { Form } from '@/ui/settings/shared/form';
+import type { Note } from '@/search/note';
+import { ModelSettings } from '@/ui/settings/model-settings';
+import { searchPreferences } from '@/ui/settings/search-preferences';
+import { FilterContext } from '@/ui/settings/filters/filter-context';
+import { ObsidianFilterCatalog } from '@/platform/obsidian-filter-catalog';
 
 export interface SettingsTabOptions {
 	settings: Settings;
 	save: () => Promise<void>;
+	models?: NoteModels;
+	findNotes?: (model: NoteModel) => Note[];
 }
 
 export class SettingsTab extends PluginSettingTab {
-	private readonly bindings = new Bindings();
+	private readonly cleanups = new Set<() => void>();
 
 	constructor(
 		plugin: Plugin,
 		private readonly options: SettingsTabOptions
 	) {
 		super(plugin.app, plugin);
+		plugin.register(() => {
+			for (const cleanup of this.cleanups) cleanup();
+		});
 	}
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
-		this.bindings.clear();
-
-		const form = new Form<ShardSettings>({
-			bindings: this.bindings,
-			read: () => this.options.settings.toJSON(),
-			write: async (changes) => {
-				this.options.settings.update(changes);
-				await this.options.save();
-			},
-		});
-
-		return [this.opening(form), this.search(form)];
+		const items: SettingDefinitionItem[] = [];
+		const { models, findNotes } = this.options;
+		if (models && findNotes) {
+			const item: SettingDefinitionItem = {
+				name: 'Models',
+				aliases: ['Keywords', 'Folders', 'Tags', 'Properties', ...models.all.map((model) => model.name)],
+				render: (setting) => {
+					const catalog = new ObsidianFilterCatalog(this.app);
+					const context = { app: this.app, catalog };
+					return this.mount(
+						setting.settingEl,
+						(revision) =>
+							createElement(
+								FilterContext.Provider,
+								{ value: context },
+								createElement(ModelSettings, {
+									models,
+									findNotes,
+									openNote: (note) => this.openNote(note),
+									revision,
+								})
+							),
+						() => catalog.invalidate()
+					);
+				},
+			};
+			items.push({ type: 'group', heading: 'Models', items: [item] });
+		}
+		items.push(searchPreferences());
+		return items;
 	}
 
 	getControlValue(key: string): unknown {
-		return this.bindings.read(key);
+		const values = this.options.settings.toJSON();
+		return Object.prototype.hasOwnProperty.call(values, key) ? values[key as keyof ShardSettings] : undefined;
 	}
 
-	setControlValue(key: string, value: unknown): Promise<void> {
-		return this.bindings.write(key, value);
+	async setControlValue(key: string, value: unknown): Promise<void> {
+		if (key === 'recentNotes' && Settings.isRecentNotes(value)) {
+			this.options.settings.update({ recentNotes: value });
+		} else if (
+			(key === 'commandsOnOpen' || key === 'searchHeadings' || key === 'unifiedSearch') &&
+			typeof value === 'boolean'
+		) {
+			this.options.settings.update({ [key]: value });
+		} else {
+			return;
+		}
+		try {
+			await this.options.save();
+		} catch (error) {
+			new Notice(error instanceof Error ? error.message : 'Could not save search preferences.');
+		}
 	}
 
-	private opening(form: Form<ShardSettings>): SettingDefinitionGroup {
-		return {
-			type: 'group',
-			heading: 'When the bar opens',
-			items: [
-				{
-					name: 'Show commands',
-					desc: 'List a few commands above your recent notes before you type.',
-					control: form.toggle('commandsOnOpen'),
-				},
-				{
-					name: 'Recent notes',
-					desc: `How many recent notes to list before you type, from 1 to ${MAX_RECENT_NOTES}.`,
-					control: form.number('recentNotes', (value) => Settings.isRecentNotes(value), {
-						min: 1,
-						max: MAX_RECENT_NOTES,
-						step: 1,
-						validate: (value) =>
-							Settings.isRecentNotes(value) ? undefined : `Enter a whole number from 1 to ${MAX_RECENT_NOTES}.`,
-					}),
-				},
-			],
+	private mount(element: HTMLElement, view: (revision: number) => ReactNode, notesChanged?: () => void): () => void {
+		element.empty();
+		element.addClass('shard-settings-row');
+		const root = createRoot(element);
+		const lifecycle = new Component();
+		let revision = 0;
+		const render = (): void => root.render(view(revision++));
+		lifecycle.load();
+		if (notesChanged) {
+			const refresh = (): void => {
+				notesChanged();
+				render();
+			};
+			lifecycle.registerEvent(this.app.metadataCache.on('changed', refresh));
+			lifecycle.registerEvent(this.app.metadataCache.on('resolved', refresh));
+			lifecycle.registerEvent(this.app.vault.on('create', refresh));
+			lifecycle.registerEvent(this.app.vault.on('delete', refresh));
+			lifecycle.registerEvent(this.app.vault.on('rename', refresh));
+		}
+		render();
+		const cleanup = (): void => {
+			if (!this.cleanups.delete(cleanup)) return;
+			lifecycle.unload();
+			root.unmount();
 		};
+		this.cleanups.add(cleanup);
+		return cleanup;
 	}
 
-	private search(form: Form<ShardSettings>): SettingDefinitionGroup {
-		return {
-			type: 'group',
-			heading: 'Search',
-			items: [
-				{
-					name: 'Search headings',
-					desc: 'Include headings inside notes in the results.',
-					control: form.toggle('searchHeadings'),
-				},
-			],
-		};
+	private openNote(note: Note): void {
+		void this.app.workspace.openLinkText(note.path, '', false).catch((error: unknown) => {
+			new Notice(error instanceof Error ? error.message : 'Could not open this note.');
+		});
 	}
 }
