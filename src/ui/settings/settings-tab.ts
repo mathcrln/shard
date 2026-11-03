@@ -9,6 +9,8 @@ import { Settings } from '@/models/plugin-settings';
 import type { ShardSettings } from '@/models/plugin-settings';
 import type { Note } from '@/search/note';
 import { ModelSettings } from '@/ui/settings/model-settings';
+import { PropertySettings } from '@/ui/settings/property-settings';
+import type { ObservedProperty, PropertyDefinitions } from '@/models/property-definitions';
 import { searchPreferences } from '@/ui/settings/search-preferences';
 import { FilterContext } from '@/ui/settings/filters/filter-context';
 import { ObsidianFilterCatalog } from '@/platform/obsidian-filter-catalog';
@@ -18,6 +20,8 @@ export interface SettingsTabOptions {
 	save: () => Promise<void>;
 	models?: NoteModels;
 	findNotes?: (model: NoteModel) => Note[];
+	properties?: PropertyDefinitions;
+	observedProperties?: () => ObservedProperty[];
 }
 
 export class SettingsTab extends PluginSettingTab {
@@ -61,6 +65,28 @@ export class SettingsTab extends PluginSettingTab {
 				},
 			};
 			items.push({ type: 'group', heading: 'Models', items: [item] });
+		}
+		const { properties, observedProperties } = this.options;
+		if (models && properties && observedProperties) {
+			items.push({
+				type: 'group',
+				heading: 'Properties',
+				items: [
+					{
+						name: 'Properties',
+						aliases: ['Description', 'Order', 'Keyword', ...properties.all.map((property) => property.key)],
+						render: (setting) =>
+							this.mount(setting.settingEl, (revision) =>
+								createElement(PropertySettings, {
+									definitions: properties,
+									models,
+									observed: observedProperties,
+									revision,
+								})
+							),
+					},
+				],
+			});
 		}
 		items.push(searchPreferences());
 		return items;

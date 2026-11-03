@@ -18,9 +18,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Model name and keyword scopes for listing and searching matching notes
 - Model creation folders and optional Markdown templates with native title, date, and time placeholders
 - Direct note creation from the palette input with Obsidian's default new-note folder when no model override is set
+- Outgoing-link membership filters using Obsidian's cached links
+- Native suggestions for filter properties, values, folders, tags, and note links
 
 ### Changed
 
+- Compact Bases-style filter rows with native operator menus and inline negative conditions
 - Concise settings labels and search states without instructional helper copy
 - Always-visible search preferences with native Obsidian controls aligned to the right
 - Unified search mixes notes, headings, and commands by relevance, with exact matches ranked first

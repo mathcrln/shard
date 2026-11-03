@@ -13,6 +13,8 @@ export default class ShardPlugin extends Plugin {
 				models: shard.models,
 				save: () => shard.saveSettings(),
 				findNotes: (model) => shard.modelNotes.find(model),
+				properties: shard.properties,
+				observedProperties: () => shard.observedProperties.observed(),
 			})
 		);
 		this.addChild(new Commands(this, shard.search, shard.settings, shard.createNote));

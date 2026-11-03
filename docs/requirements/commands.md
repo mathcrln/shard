@@ -4,47 +4,47 @@ Commands are the actions Obsidian and its plugins register.
 
 ## Listing
 
-- [ ] `CMD-001` The bar lists every command Obsidian and plugins offer.
-- [ ] `CMD-002` Commands are grouped by the plugin that provides them.
-- [ ] `CMD-003` A command that cannot run in the current context is not listed as runnable.
-- [ ] `CMD-004` A command registered after startup appears without restarting.
-- [ ] `CMD-005` A command removed by disabling its plugin disappears.
-- [ ] `CMD-006` A command shows its hotkey when it has one.
+- [ ] `CMD-001` List every command Obsidian and plugins offer in the bar.
+- [ ] `CMD-002` Group commands by the plugin that provides them.
+- [ ] `CMD-003` Exclude commands that cannot run in the current context from runnable results.
+- [ ] `CMD-004` Show a command registered after startup without restarting.
+- [ ] `CMD-005` Remove a command from the list when its plugin is disabled.
+- [ ] `CMD-006` Show a command's hotkey when it has one.
 
 ## Running
 
-- [ ] `CMD-007` Selecting a command runs it in the context the user was in before opening the bar.
-- [ ] `CMD-008` A command that fails shows the failure.
+- [ ] `CMD-007` Run a selected command in the context the user was in before opening the bar.
+- [ ] `CMD-008` Show the failure when a command fails.
 
 ## Ranking
 
-- [ ] `CMD-009` Commands the user runs often rank higher.
-- [ ] `CMD-010` Recently run commands rank higher.
-- [ ] `CMD-011` With the `>` prefix and an empty query, the bar shows the user's most used commands first, not an alphabetical wall.
+- [ ] `CMD-009` Rank commands the user runs often higher.
+- [ ] `CMD-010` Rank recently run commands higher.
+- [ ] `CMD-011` Show the user's most used commands first, not an alphabetical wall, for the `>` prefix with an empty query.
 
 ## Organizing
 
-- [ ] `CMD-012` The user can pin a command so it is listed first.
-- [ ] `CMD-013` The user can hide a command so it is never listed.
-- [ ] `CMD-014` The user can give a command an alias that also finds it.
-- [ ] `CMD-019` The user can view hidden commands.
-- [ ] `CMD-020` The user can restore a hidden command to search results.
-- [?] `CMD-016` Typing a plugin's name followed by a space narrows the list to that plugin's commands.
+- [ ] `CMD-012` Let the user pin a command so it is listed first.
+- [ ] `CMD-013` Let the user hide a command so it is never listed.
+- [ ] `CMD-014` Let the user give a command an alias that also finds it.
+- [ ] `CMD-019` Let the user view hidden commands.
+- [ ] `CMD-020` Let the user restore a hidden command to search results.
+- [?] `CMD-016` Narrow the list to a plugin's commands when the user types the plugin's name followed by a space.
 
 ## Stability
 
-- [ ] `CMD-017` Pins, hides, and aliases are kept by command id and survive restarts.
-- [ ] `CMD-018` A pin, hide, or alias for a command that no longer exists is kept, not deleted.
+- [ ] `CMD-017` Keep pins, hides, and aliases by command id across restarts.
+- [ ] `CMD-018` Keep a pin, hide, or alias for a command that no longer exists instead of deleting it.
 
 ## Contextual model commands
 
-- [ ] `CMD-021` A model can expose commands applicable to its notes.
-- [ ] `CMD-022` The active note's model is determined from the user's membership rules.
-- [ ] `CMD-023` The user can enable or disable contextual model commands independently of contextual result suggestions.
-- [ ] `CMD-024` The user can choose a label for a model's contextual command.
-- [ ] `CMD-025` A contextual command acts on the note active before the bar opened.
-- [ ] `CMD-026` Disabling contextual commands leaves global Obsidian command search available.
-- [?] `CMD-027` When the active note matches several models, commands from every matching model are offered together.
+- [ ] `CMD-021` Let a model expose commands applicable to its notes.
+- [ ] `CMD-022` Determine the active note's model from the user's membership rules.
+- [ ] `CMD-023` Let the user enable or disable contextual model commands independently of contextual result suggestions.
+- [ ] `CMD-024` Let the user choose a label for a model's contextual command.
+- [ ] `CMD-025` Run a contextual command on the note that was active before the bar opened.
+- [ ] `CMD-026` Keep global Obsidian command search available when contextual commands are disabled.
+- [?] `CMD-027` Offer commands from every matching model together when the active note matches several models.
 
 ## Retired identifiers
 

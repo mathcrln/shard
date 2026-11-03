@@ -35,9 +35,9 @@ Open **Settings → Shard** and select **Add model**. Enter a name, then add con
 
 The model's name is its search term. Optional **Keywords** provide extra terms, such as `games` and `videogames` for a model named Game. Add a keyword with Enter or a comma.
 
-Conditions can match folders, tags, or frontmatter properties. Choose **All conditions** or **Any condition** when combining several conditions. **Options** exposes inversion and whether to include subfolders or subtags.
+Filters use compact target/operator/value rows, with native suggestions for properties, values, folders, tags, and notes. File filters support **links to**, **in folder**, **has tag**, and **has property**, including their negative forms. Property filters support **contains** and **is**. Choose **All the following are true** or **Any of the following are true** to combine filters. Folder and tag options control whether to include subfolders or subtags.
 
-For a Game model, add a property condition with the property name `in`, match **contains**, and value `[[Games]]`. This matches notes whose `in` list contains that link, regardless of their folder.
+For a Game model, select **Add filter**, choose the `in` property, **contains**, and `[[Games]]`. Property names and existing values come from Obsidian's cached note metadata. This matches notes whose `in` list contains that link, regardless of their folder.
 
 Matching notes appear in a scrollable list directly below completed conditions. The list refreshes as saved conditions or cached note metadata change. Select a note to open it.
 

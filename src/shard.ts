@@ -2,6 +2,8 @@ import { Notice, type Plugin } from 'obsidian';
 import type { CreateModelNote } from '@/models/note-creation';
 import { Settings } from '@/models/plugin-settings';
 import { NoteModels } from '@/models/note-models';
+import { PropertyDefinitions } from '@/models/property-definitions';
+import { ObsidianProperties } from '@/platform/obsidian-properties';
 import { ObsidianCommands } from '@/platform/obsidian-commands';
 import { ObsidianRecents } from '@/platform/obsidian-recents';
 import { ObsidianVault } from '@/platform/obsidian-vault';
@@ -16,6 +18,8 @@ export class Shard {
 		readonly search: Search,
 		readonly models: NoteModels,
 		readonly modelNotes: ModelNotes,
+		readonly properties: PropertyDefinitions,
+		readonly observedProperties: ObsidianProperties,
 		readonly createNote: CreateModelNote,
 		private readonly persist: () => Promise<void>
 	) {}
@@ -27,12 +31,13 @@ export class Shard {
 		const settings = Settings.from(data);
 		let pending = Promise.resolve();
 		const persist = (): Promise<void> => {
-			const snapshot = { ...stored, ...settings.toJSON(), models: models.toJSON() };
+			const snapshot = { ...stored, ...settings.toJSON(), models: models.toJSON(), properties: properties.toJSON() };
 			pending = pending.catch(() => undefined).then(() => plugin.saveData(snapshot));
 			return pending;
 		};
 		const storedModels = 'models' in stored ? stored.models : undefined;
 		const models = NoteModels.from(storedModels, persist);
+		const properties = PropertyDefinitions.from('properties' in stored ? stored.properties : undefined, persist);
 		const vault = new ObsidianVault(app);
 		const modelNotes = new ModelNotes(vault, models);
 		const creation = new ObsidianNoteCreation(app);
@@ -64,6 +69,8 @@ export class Shard {
 			}),
 			models,
 			modelNotes,
+			properties,
+			new ObsidianProperties(app),
 			createNote,
 			persist
 		);

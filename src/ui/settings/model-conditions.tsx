@@ -163,18 +163,19 @@ function ConditionRow({ rule, onUpdate, onRemove }: RowProps) {
 			current.exclude === exclude &&
 			(current.type !== 'property' || current.operator === operator);
 		const select = (type: RuleType, exclude: boolean, operator?: PropertyOperator): void => {
+			const latestRule = latest.current;
 			if (type === 'property') {
-				const property = current.type === 'property' ? current.property : '';
-				const value = current.type === 'property' ? current.value : '';
-				save({ id: current.id, type, property, value, operator: operator ?? 'contains', exclude });
+				const property = latestRule.type === 'property' ? latestRule.property : '';
+				const value = latestRule.type === 'property' ? latestRule.value : '';
+				save({ id: latestRule.id, type, property, value, operator: operator ?? 'contains', exclude });
 			} else if (type === 'link') {
-				save({ id: current.id, type, value: current.type === 'link' ? current.value : '', exclude });
+				save({ id: latestRule.id, type, value: latestRule.type === 'link' ? latestRule.value : '', exclude });
 			} else {
 				save({
-					id: current.id,
+					id: latestRule.id,
 					type,
-					value: current.type === type ? current.value : '',
-					recursive: current.type === type ? current.recursive : true,
+					value: latestRule.type === type ? latestRule.value : '',
+					recursive: latestRule.type === type ? latestRule.recursive : true,
 					exclude,
 				});
 			}

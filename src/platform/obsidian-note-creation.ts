@@ -1,5 +1,6 @@
 import { getLinkpath, moment, TFolder, type App, type TFile } from 'obsidian';
 import type { NoteCreation } from '@/models/note-creation';
+import { sanitizeTitle } from '@/models/note-title';
 
 const INVALID_FILENAME_CHARACTERS = /[<>:"/\\|?*\p{Cc}]/u;
 const WINDOWS_DEVICE_NAME = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/iu;
@@ -8,7 +9,7 @@ export class ObsidianNoteCreation {
 	constructor(private readonly app: App) {}
 
 	async create(input: NoteCreation): Promise<TFile> {
-		const title = validateTitle(input.title);
+		const title = validateTitle(sanitizeTitle(input.title));
 		const requestedFolder = input.folder.trim();
 		const folder = validateFolder(
 			requestedFolder

@@ -1,3 +1,4 @@
+import { sanitizeTitle } from '@/models/note-title';
 import type { Settings } from '@/models/plugin-settings';
 import type { ModelCreator } from '@/models/note-creation';
 import type { NoteModel } from '@/models/note-model';
@@ -111,7 +112,7 @@ export class Search {
 		return {
 			group: 'Models',
 			title: `Create ${model.name}`,
-			description: title,
+			description: sanitizeTitle(title),
 			ranges: [],
 			actions: [{ name: 'Create', keepOpen: true, run: () => creator.create(model, title) }],
 		};
