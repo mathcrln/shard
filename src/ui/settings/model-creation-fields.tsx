@@ -1,9 +1,10 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Notice } from 'obsidian';
 import type { CreationDefaults } from '@/models/note-creation';
 import type { NoteModel } from '@/models/note-model';
 import { useFilters } from '@/ui/settings/filters/filter-context';
 import { SuggestedInput } from '@/ui/settings/filters/suggested-input';
+import { Queue } from '@/utils/queue';
 
 type Props = {
 	model: NoteModel;
@@ -14,7 +15,7 @@ export function ModelCreationFields({ model, onChange }: Props) {
 	const { catalog } = useFilters();
 	const defaults = model.creation ?? { folder: '', template: '' };
 	const latest = useRef(defaults);
-	const queue = useRef(Promise.resolve());
+	const [saves] = useState(() => new Queue());
 	latest.current = defaults;
 
 	const save = (field: keyof CreationDefaults, raw: string): void => {
@@ -22,9 +23,8 @@ export function ModelCreationFields({ model, onChange }: Props) {
 		if (value === latest.current[field]) return;
 		const next = { ...latest.current, [field]: value };
 		latest.current = next;
-		queue.current = queue.current
-			.catch(() => undefined)
-			.then(() => onChange(next))
+		void saves
+			.add(() => onChange(next))
 			.catch((error: unknown) => {
 				new Notice(error instanceof Error ? error.message : 'Could not save model creation settings.');
 			});

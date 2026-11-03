@@ -1,3 +1,5 @@
+import { Num } from '@/utils/num';
+
 export interface ShardSettings {
 	searchHeadings: boolean;
 	commandsOnOpen: boolean;
@@ -22,18 +24,19 @@ export class Settings {
 	}
 
 	static from(data: unknown): Settings {
-		const record = isRecord(data) ? data : {};
+		const stored: Partial<Record<keyof ShardSettings, unknown>> = typeof data === 'object' && data !== null ? data : {};
+		const { searchHeadings, commandsOnOpen, unifiedSearch, recentNotes } = stored;
 
 		return new Settings({
-			searchHeadings: boolean(record['searchHeadings'], DEFAULTS.searchHeadings),
-			commandsOnOpen: boolean(record['commandsOnOpen'], DEFAULTS.commandsOnOpen),
-			unifiedSearch: boolean(record['unifiedSearch'], DEFAULTS.unifiedSearch),
-			recentNotes: Settings.isRecentNotes(record['recentNotes']) ? record['recentNotes'] : DEFAULTS.recentNotes,
+			searchHeadings: typeof searchHeadings === 'boolean' ? searchHeadings : DEFAULTS.searchHeadings,
+			commandsOnOpen: typeof commandsOnOpen === 'boolean' ? commandsOnOpen : DEFAULTS.commandsOnOpen,
+			unifiedSearch: typeof unifiedSearch === 'boolean' ? unifiedSearch : DEFAULTS.unifiedSearch,
+			recentNotes: Settings.isRecentNotes(recentNotes) ? recentNotes : DEFAULTS.recentNotes,
 		});
 	}
 
 	static isRecentNotes(value: unknown): value is number {
-		return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1 && value <= MAX_RECENT_NOTES;
+		return typeof value === 'number' && Number.isSafeInteger(value) && Num.between(value, 1, MAX_RECENT_NOTES);
 	}
 
 	get searchHeadings(): boolean {
@@ -59,12 +62,4 @@ export class Settings {
 	toJSON(): ShardSettings {
 		return { ...this.values };
 	}
-}
-
-function boolean(value: unknown, fallback: boolean): boolean {
-	return typeof value === 'boolean' ? value : fallback;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

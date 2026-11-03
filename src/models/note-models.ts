@@ -3,12 +3,14 @@ import {
 	cloneModel,
 	isCreationDefaults,
 	isModelRule,
+	isRecord,
 	isRuleType,
 	keywordsProblem as checkKeywords,
 	modelProblem,
 	nameProblem as checkName,
 	normalizeLabel,
 } from '@/models/model-validation';
+import { Str } from '@/utils/str';
 
 type StoredModel = {
 	raw: Record<string, unknown>;
@@ -24,16 +26,14 @@ type StoredRecord = StoredModel | { raw: unknown; problem: string };
 export class NoteModels {
 	private constructor(
 		private readonly records: StoredRecord[],
-		private readonly save: () => Promise<void>,
-		private saveQueue: Promise<void>
+		private readonly save: () => Promise<void>
 	) {}
 
 	static from(raw: unknown, save: () => Promise<void>): NoteModels {
 		if (!Array.isArray(raw)) {
 			return new NoteModels(
-				raw === undefined ? [] : [{ raw: copyValue(raw), problem: 'The saved model collection is not a list.' }],
-				save,
-				Promise.resolve()
+				raw === undefined ? [] : [{ raw: structuredClone(raw), problem: 'The saved model collection is not a list.' }],
+				save
 			);
 		}
 
@@ -48,7 +48,7 @@ export class NoteModels {
 		const records = migrated.map((item, index): StoredRecord => {
 			if (item.problem || !item.value) {
 				return {
-					raw: copyValue(raw[index]),
+					raw: structuredClone(raw[index]),
 					problem: describeProblem(raw[index], item.problem ?? 'The model could not be read.', index),
 				};
 			}
@@ -57,16 +57,16 @@ export class NoteModels {
 			const id = source.id as string;
 			if ((idCounts.get(id) ?? 0) > 1) {
 				return {
-					raw: copyValue(raw[index]),
+					raw: structuredClone(raw[index]),
 					problem: `Model "${recordName(source)}" uses duplicate ID "${id}" and is unavailable until the stored IDs are unique.`,
 				};
 			}
 
 			const rawRules = source.rules as unknown[];
-			const invalidRules = rawRules.filter((rule) => !isModelRule(rule)).map(copyValue);
+			const invalidRules = rawRules.filter((rule) => !isModelRule(rule)).map((value) => structuredClone(value));
 			const validRules = rawRules.filter(isModelRule).map((rule) => ({ ...rule }));
 			const schemaProblems: string[] = [];
-			const hasCreation = Object.prototype.hasOwnProperty.call(source, 'creation');
+			const hasCreation = Object.hasOwn(source, 'creation');
 			const creationProblem =
 				hasCreation && !isCreationDefaults(source.creation)
 					? 'Creation defaults have invalid stored data; update or clear them.'
@@ -89,7 +89,7 @@ export class NoteModels {
 			};
 
 			return {
-				raw: copyRecord(raw[index] as Record<string, unknown>),
+				raw: structuredClone(raw[index] as Record<string, unknown>),
 				model,
 				invalidRules,
 				schemaProblems,
@@ -97,7 +97,7 @@ export class NoteModels {
 			};
 		});
 
-		return new NoteModels(records, save, Promise.resolve());
+		return new NoteModels(records, save);
 	}
 
 	get all(): readonly NoteModel[] {
@@ -150,22 +150,25 @@ export class NoteModels {
 
 	toJSON(): unknown[] {
 		return this.records.map((record) => {
-			if ('problem' in record) return copyValue(record.raw);
-			const raw = copyRecord(record.raw);
+			if ('problem' in record) return structuredClone(record.raw);
+			const raw = structuredClone(record.raw);
 			delete raw.keyword;
 			delete raw.aliases;
 			const serialized: Record<string, unknown> = {
 				...raw,
 				...record.model,
 				keywords: [...record.model.keywords],
-				rules: [...record.model.rules.map((rule) => ({ ...rule })), ...record.invalidRules.map(copyValue)],
+				rules: [
+					...record.model.rules.map((rule) => ({ ...rule })),
+					...record.invalidRules.map((value) => structuredClone(value)),
+				],
 			};
 			if (!record.model.icon) delete serialized.icon;
 			if (record.model.creation) {
-				const rawCreation = isRecord(raw.creation) ? copyRecord(raw.creation) : {};
+				const rawCreation = isRecord(raw.creation) ? structuredClone(raw.creation) : {};
 				serialized.creation = { ...rawCreation, ...record.model.creation };
 			} else if (record.creationProblem && !record.clearCreation) {
-				serialized.creation = copyValue(raw.creation);
+				serialized.creation = structuredClone(raw.creation);
 			} else {
 				delete serialized.creation;
 			}
@@ -192,7 +195,7 @@ export class NoteModels {
 		}
 		const model: NoteModel = { id, name, keywords, match: 'all', rules: [] };
 		this.records.push({ raw: {}, model, invalidRules: [], schemaProblems: [] });
-		await this.persist();
+		await this.save();
 		return cloneModel(model);
 	}
 
@@ -205,7 +208,7 @@ export class NoteModels {
 		if (changes.match !== undefined && changes.match !== 'all' && changes.match !== 'any') {
 			throw new Error('Rule matching must be set to all or any.');
 		}
-		const creationChanged = Object.prototype.hasOwnProperty.call(changes, 'creation');
+		const creationChanged = Object.hasOwn(changes, 'creation');
 		if (creationChanged && changes.creation !== undefined && !isCreationDefaults(changes.creation)) {
 			throw new Error('Creation defaults must include a folder and template path.');
 		}
@@ -218,14 +221,14 @@ export class NoteModels {
 			stored.creationProblem = undefined;
 			stored.clearCreation = changes.creation === undefined;
 		}
-		await this.persist();
+		await this.save();
 	}
 
 	async remove(id: string): Promise<void> {
 		const index = this.records.findIndex((record) => !('problem' in record) && record.model.id === id);
 		if (index < 0) throw new Error('This model is no longer available.');
 		this.records.splice(index, 1);
-		await this.persist();
+		await this.save();
 	}
 
 	async addRule(modelId: string, type: RuleType = 'folder'): Promise<ModelRule> {
@@ -234,7 +237,7 @@ export class NoteModels {
 		const rule = this.emptyRule(type);
 		if (stored.model.rules.some((existing) => existing.id === rule.id)) throw new Error('Could not create a unique rule ID.');
 		stored.model.rules.push(rule);
-		await this.persist();
+		await this.save();
 		return { ...rule };
 	}
 
@@ -244,7 +247,7 @@ export class NoteModels {
 		const index = stored.model.rules.findIndex((existing) => existing.id === rule.id);
 		if (index < 0) throw new Error('This membership rule is no longer available.');
 		stored.model.rules[index] = { ...rule };
-		await this.persist();
+		await this.save();
 	}
 
 	async removeRule(modelId: string, ruleId: string): Promise<void> {
@@ -252,7 +255,7 @@ export class NoteModels {
 		const index = stored.model.rules.findIndex((rule) => rule.id === ruleId);
 		if (index < 0) throw new Error('This membership rule is no longer available.');
 		stored.model.rules.splice(index, 1);
-		await this.persist();
+		await this.save();
 	}
 
 	private validRecords(): StoredModel[] {
@@ -271,7 +274,7 @@ export class NoteModels {
 		if (nameIssue) throw new Error(nameIssue);
 		const keywordsIssue = checkKeywords(keywords, others);
 		if (keywordsIssue) throw new Error(keywordsIssue);
-		if (keywords.some((word) => normalizeLabel(word) === normalizeLabel(name))) {
+		if (keywords.some((word) => Str.same(word, name))) {
 			throw new Error('A keyword cannot repeat its model name.');
 		}
 	}
@@ -282,23 +285,18 @@ export class NoteModels {
 		if (type === 'link') return { id, type, exclude: false, value: '' };
 		return { id, type, exclude: false, value: '', recursive: true };
 	}
-
-	private persist(): Promise<void> {
-		this.saveQueue = this.saveQueue.catch(() => undefined).then(() => this.save());
-		return this.saveQueue;
-	}
 }
 
 function migrateRecord(value: unknown): { value?: Record<string, unknown>; problem?: string } {
 	if (!isRecord(value)) return { problem: 'The stored entry is not an object.' };
-	const hasLegacyKeyword = Object.prototype.hasOwnProperty.call(value, 'keyword');
-	const hasLegacyAliases = Object.prototype.hasOwnProperty.call(value, 'aliases');
+	const hasLegacyKeyword = Object.hasOwn(value, 'keyword');
+	const hasLegacyAliases = Object.hasOwn(value, 'aliases');
 	if (hasLegacyKeyword && typeof value.keyword !== 'string') return { problem: 'The legacy keyword is not text.' };
 	if (hasLegacyAliases && (!Array.isArray(value.aliases) || !value.aliases.every((alias) => typeof alias === 'string'))) {
 		return { problem: 'The legacy aliases are not a list of text.' };
 	}
 	if (
-		Object.prototype.hasOwnProperty.call(value, 'keywords') &&
+		Object.hasOwn(value, 'keywords') &&
 		(!Array.isArray(value.keywords) || !value.keywords.every((word) => typeof word === 'string'))
 	) {
 		return { problem: 'The keywords are not a list of text.' };
@@ -324,10 +322,8 @@ function migrateRecord(value: unknown): { value?: Record<string, unknown>; probl
 }
 
 function describeProblem(value: unknown, problem: string, index: number): string {
-	if (isRecord(value) && typeof value.name === 'string' && value.name.trim()) {
-		return `Model "${value.name.trim()}": ${problem}`;
-	}
-	return `Stored model entry ${index + 1}: ${problem}`;
+	const name = isRecord(value) && typeof value.name === 'string' ? value.name.trim() : '';
+	return name ? `Model "${name}": ${problem}` : `Stored model entry ${index + 1}: ${problem}`;
 }
 
 function recordName(value: Record<string, unknown>): string {
@@ -339,20 +335,4 @@ function hasLinkTarget(value: string): boolean {
 	const wikiLink = trimmed.match(/^!?\[\[([\s\S]*?)\]\]$/u);
 	const target = (wikiLink?.[1] ?? trimmed).split('|', 1)[0]?.split('#', 1)[0]?.trim();
 	return !!target;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function copyValue(value: unknown): unknown {
-	if (Array.isArray(value)) return value.map(copyValue);
-	if (typeof value === 'object' && value !== null) {
-		return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, copyValue(child)]));
-	}
-	return value;
-}
-
-function copyRecord(value: Record<string, unknown>): Record<string, unknown> {
-	return copyValue(value) as Record<string, unknown>;
 }

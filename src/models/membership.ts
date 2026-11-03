@@ -1,8 +1,8 @@
 import type { ModelRule, NoteModel } from '@/models/note-model';
 import type { Note } from '@/search/note';
-import { Folded } from '@/text/fold';
+import { Path } from '@/utils/path';
+import { Str } from '@/utils/str';
 
-/** Evaluates a model's inclusion and exclusion rules against cached note metadata. */
 export class Membership {
 	static matches(model: NoteModel, note: Note): boolean {
 		if (!Array.isArray(model.rules) || model.rules.length === 0) return false;
@@ -73,18 +73,16 @@ function matchesFolder(ruleValue: string, noteFolder: string, recursive: boolean
 	if (!rulePath) return false;
 	const folder = normalizePath(noteFolder);
 	if (rulePath === '/') return recursive || folder === '' || folder === '/';
-	const wanted = folded(rulePath);
-	const actual = folded(folder);
-	return actual === wanted || (recursive && actual.startsWith(`${wanted}/`));
+	const wanted = Str.fold(rulePath);
+	const actual = Str.fold(folder);
+	return recursive ? Path.isWithin(actual, wanted) : actual === wanted;
 }
 
 function matchesTag(ruleValue: string, noteTag: string, recursive: boolean): boolean {
-	const wanted = normalizeTag(ruleValue);
-	const actual = normalizeTag(noteTag);
+	const wanted = Str.fold(normalizeTag(ruleValue));
+	const actual = Str.fold(normalizeTag(noteTag));
 	if (!wanted || !actual) return false;
-	const normalizedWanted = folded(wanted);
-	const normalizedActual = folded(actual);
-	return normalizedActual === normalizedWanted || (recursive && normalizedActual.startsWith(`${normalizedWanted}/`));
+	return recursive ? Path.isWithin(actual, wanted) : actual === wanted;
 }
 
 function matchesProperty(rule: Extract<ModelRule, { type: 'property' }>, properties: Readonly<Record<string, unknown>>): boolean {
@@ -98,20 +96,19 @@ function matchesProperty(rule: Extract<ModelRule, { type: 'property' }>, propert
 		return (Array.isArray(actual) ? actual : [actual]).some((value) => equalScalar(value, expected));
 	}
 
-	if (typeof actual === 'string') return folded(normalizeLink(actual)).includes(folded(normalizeLink(expected)));
+	if (typeof actual === 'string') return Str.fold(normalizeLink(actual)).includes(Str.fold(normalizeLink(expected)));
 	if (Array.isArray(actual)) return actual.some((value) => equalScalar(value, expected));
 	return false;
 }
 
 function equalScalar(value: unknown, expected: string): boolean {
 	const scalar = scalarText(value);
-	return scalar !== null && folded(scalar) === folded(normalizeLink(expected));
+	return scalar !== null && Str.fold(scalar) === Str.fold(normalizeLink(expected));
 }
 
 function propertyOf(properties: Readonly<Record<string, unknown>>, name: string): { found: boolean; value?: unknown } {
-	if (Object.prototype.hasOwnProperty.call(properties, name)) return { found: true, value: properties[name] };
-	const normalized = folded(name);
-	const key = Object.keys(properties).find((candidate) => folded(candidate) === normalized);
+	if (Object.hasOwn(properties, name)) return { found: true, value: properties[name] };
+	const key = Object.keys(properties).find((candidate) => Str.same(candidate, name));
 	return key === undefined ? { found: false } : { found: true, value: properties[key] };
 }
 
@@ -136,7 +133,7 @@ function matchesLink(value: string, links: readonly string[]): boolean {
 
 function normalizeLinkTarget(value: string): string {
 	const target = normalizeLink(value).split('#', 1)[0]?.trim().replace(/\\/gu, '/') ?? '';
-	return folded(target.replace(/\.md$/iu, ''));
+	return Str.fold(target.replace(/\.md$/iu, ''));
 }
 
 function normalizeTag(value: string): string {
@@ -148,8 +145,4 @@ function normalizePath(value: string): string {
 	if (trimmed === '/') return '/';
 	const normalized = trimmed.replace(/^\/+|\/+$/gu, '');
 	return normalized ? `/${normalized}` : '';
-}
-
-function folded(value: string): string {
-	return Folded.of(value).text;
 }

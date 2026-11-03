@@ -1,7 +1,8 @@
 import { getAllTags, getIconIds, TFile, type App } from 'obsidian';
 import type { FilterCatalog, FilterChoice } from '@/ui/settings/filters/filter-choice';
 import { Matcher } from '@/text/matcher';
-import { Folded } from '@/text/fold';
+import { Path } from '@/utils/path';
+import { Str } from '@/utils/str';
 
 type PropertyEntry = { value: unknown; kind: NonNullable<FilterChoice['kind']> };
 type NoteEntry = { file: TFile; properties: Record<string, unknown>; tags: string[] };
@@ -54,7 +55,7 @@ export class ObsidianFilterCatalog implements FilterCatalog {
 	templates(query: string): readonly FilterChoice[] {
 		const folder = this.templateFolder();
 		const files = this.snapshot().noteFiles;
-		const inFolder = folder ? files.filter((file) => file.path.startsWith(`${folder}/`)) : [];
+		const inFolder = folder ? files.filter((file) => Path.isWithin(file.path, folder)) : [];
 		const choices = (inFolder.length > 0 ? inFolder : files).map((file) => ({
 			value: file.path,
 			label: file.path,
@@ -128,7 +129,7 @@ export class ObsidianFilterCatalog implements FilterCatalog {
 				propertyValues.set(property, values);
 			}
 			for (const tag of entry.tags) {
-				const key = folded(tag);
+				const key = Str.fold(tag);
 				if (!tags.has(key)) tags.set(key, { value: tag, label: tag, icon: 'hash', kind: 'text' });
 			}
 		}
@@ -176,7 +177,7 @@ function filterChoices(choices: readonly FilterChoice[], query: string, alternat
 function propertyValues(snapshot: Snapshot, property: string): PropertyEntry[] {
 	const exact = snapshot.propertyValues.get(property);
 	if (exact) return exact.values;
-	const key = [...snapshot.propertyValues.keys()].find((candidate) => folded(candidate) === folded(property));
+	const key = [...snapshot.propertyValues.keys()].find((candidate) => Str.same(candidate, property));
 	return key ? (snapshot.propertyValues.get(key)?.values ?? []) : [];
 }
 
@@ -236,8 +237,4 @@ function iconForKind(kind: NonNullable<FilterChoice['kind']>): string {
 		case 'text':
 			return 'text';
 	}
-}
-
-function folded(value: string): string {
-	return Folded.of(value).text;
 }

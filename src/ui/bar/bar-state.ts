@@ -3,6 +3,7 @@ import type { ModelCreator } from '@/models/note-creation';
 import type { Action, Shortcut } from '@/search/action';
 import type { Group, Result } from '@/search/result';
 import { searchModeFor, type SearchMode } from '@/search/mode';
+import { Num } from '@/utils/num';
 
 export type Section = { group: Group; results: Result[] };
 
@@ -87,26 +88,26 @@ export class BarState {
 
 	next(): void {
 		if (this.actionIndex !== null) {
-			this.actionIndex = Math.min(this.actions.length - 1, this.actionIndex + 1);
+			this.actionIndex = Num.clamp(this.actionIndex + 1, 0, this.actions.length - 1);
 		} else {
-			this.index = Math.min(this.results.length - 1, this.index + 1);
+			this.index = Num.clamp(this.index + 1, 0, this.results.length - 1);
 		}
 	}
 
 	previous(): void {
 		if (this.actionIndex !== null) {
-			this.actionIndex = Math.max(0, this.actionIndex - 1);
+			this.actionIndex = Num.clamp(this.actionIndex - 1, 0, this.actions.length - 1);
 		} else {
-			this.index = Math.max(0, this.index - 1);
+			this.index = Num.clamp(this.index - 1, 0, this.results.length - 1);
 		}
 	}
 
 	highlight(position: number): void {
-		if (position >= 0 && position < this.results.length) this.index = position;
+		if (Num.between(position, 0, this.results.length - 1)) this.index = position;
 	}
 
 	highlightAction(position: number): void {
-		if (this.actionsOpen && position >= 0 && position < this.actions.length) this.actionIndex = position;
+		if (this.actionsOpen && Num.between(position, 0, this.actions.length - 1)) this.actionIndex = position;
 	}
 
 	openActions(): void {

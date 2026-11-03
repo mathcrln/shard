@@ -1,4 +1,3 @@
-import { sanitizeTitle } from '@/models/note-title';
 import type { Settings } from '@/models/plugin-settings';
 import type { ModelCreator } from '@/models/note-creation';
 import type { NoteModel } from '@/models/note-model';
@@ -17,6 +16,7 @@ import { openActions } from '@/search/open-actions';
 import { compareRankedResults, type RankedResult } from '@/search/ranked-result';
 import type { Result } from '@/search/result';
 import { Matcher } from '@/text/matcher';
+import { Str } from '@/utils/str';
 
 const NOTE_LIMIT = 30;
 const HEADING_LIMIT = 10;
@@ -112,7 +112,7 @@ export class Search {
 		return {
 			group: 'Models',
 			title: `Create ${model.name}`,
-			description: sanitizeTitle(title),
+			description: Str.filename(title),
 			ranges: [],
 			actions: [{ name: 'Create', keepOpen: true, run: () => creator.create(model, title) }],
 		};

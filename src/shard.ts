@@ -11,6 +11,7 @@ import { ObsidianWorkspace } from '@/platform/obsidian-workspace';
 import { ObsidianNoteCreation } from '@/platform/obsidian-note-creation';
 import { Search } from '@/queries/search';
 import { ModelNotes } from '@/queries/model-notes';
+import { Queue } from '@/utils/queue';
 
 export class Shard {
 	private constructor(
@@ -27,17 +28,15 @@ export class Shard {
 	static async boot(plugin: Plugin): Promise<Shard> {
 		const { app } = plugin;
 		const data: unknown = await plugin.loadData();
-		const stored = typeof data === 'object' && data !== null && !Array.isArray(data) ? data : {};
+		const stored: { models?: unknown; properties?: unknown } = typeof data === 'object' && data !== null ? data : {};
 		const settings = Settings.from(data);
-		let pending = Promise.resolve();
+		const saves = new Queue();
 		const persist = (): Promise<void> => {
 			const snapshot = { ...stored, ...settings.toJSON(), models: models.toJSON(), properties: properties.toJSON() };
-			pending = pending.catch(() => undefined).then(() => plugin.saveData(snapshot));
-			return pending;
+			return saves.add(() => plugin.saveData(snapshot));
 		};
-		const storedModels = 'models' in stored ? stored.models : undefined;
-		const models = NoteModels.from(storedModels, persist);
-		const properties = PropertyDefinitions.from('properties' in stored ? stored.properties : undefined, persist);
+		const models = NoteModels.from(stored.models, persist);
+		const properties = PropertyDefinitions.from(stored.properties, persist);
 		const vault = new ObsidianVault(app);
 		const modelNotes = new ModelNotes(vault, models);
 		const creation = new ObsidianNoteCreation(app);

@@ -1,9 +1,10 @@
+import { Num } from '@/utils/num';
+import { Str } from '@/utils/str';
+
 export interface PropertyDefinition {
 	key: string;
 	description: string;
-	/** Id of the model whose notes this property links to. */
 	relation?: string;
-	/** Word that fills this property in a creation command, such as `by`. */
 	keyword?: string;
 }
 
@@ -14,10 +15,6 @@ export interface ObservedProperty {
 	type: string;
 }
 
-/**
- * Shard's own index of vault properties. List position is the order notes are written in.
- * Properties Obsidian no longer reports stay in the index until removed by the user.
- */
 export class PropertyDefinitions {
 	private constructor(
 		private readonly items: PropertyDefinition[],
@@ -26,20 +23,15 @@ export class PropertyDefinitions {
 
 	static from(raw: unknown, save: () => Promise<void>): PropertyDefinitions {
 		const items: PropertyDefinition[] = [];
-		const seen = new Set<string>();
 		for (const entry of Array.isArray(raw) ? raw : []) {
 			if (typeof entry !== 'object' || entry === null) continue;
-			const record = entry as Record<string, unknown>;
-			const key = typeof record['key'] === 'string' ? record['key'].trim() : '';
-			if (!key || seen.has(key.toLowerCase())) continue;
-			seen.add(key.toLowerCase());
+			const { key, description, relation, keyword } = entry as Partial<Record<keyof PropertyDefinition, unknown>>;
+			if (typeof key !== 'string' || !key.trim() || items.some((item) => Str.same(item.key, key))) continue;
 			items.push({
-				key,
-				description: typeof record['description'] === 'string' ? record['description'] : '',
-				...(typeof record['relation'] === 'string' && record['relation'] ? { relation: record['relation'] } : {}),
-				...(typeof record['keyword'] === 'string' && record['keyword'].trim()
-					? { keyword: record['keyword'].trim() }
-					: {}),
+				key: key.trim(),
+				description: typeof description === 'string' ? description : '',
+				...(typeof relation === 'string' && relation ? { relation } : {}),
+				...(typeof keyword === 'string' && keyword.trim() ? { keyword: keyword.trim() } : {}),
 			});
 		}
 		return new PropertyDefinitions(items, save);
@@ -50,10 +42,9 @@ export class PropertyDefinitions {
 	}
 
 	get(key: string): PropertyDefinition | undefined {
-		return this.items.find((item) => item.key.toLowerCase() === key.toLowerCase());
+		return this.items.find((item) => Str.same(item.key, key));
 	}
 
-	/** Adds properties Obsidian reports that Shard does not know yet. Returns whether anything changed. */
 	async sync(observed: readonly ObservedProperty[]): Promise<boolean> {
 		const added = observed
 			.filter((property) => !this.get(property.key))
@@ -71,7 +62,7 @@ export class PropertyDefinitions {
 		if ('keyword' in changes) {
 			const keyword = changes.keyword?.trim();
 			const clash = keyword
-				? this.items.find((other) => other !== item && other.keyword?.toLowerCase() === keyword.toLowerCase())
+				? this.items.find((other) => other !== item && other.keyword !== undefined && Str.same(other.keyword, keyword))
 				: undefined;
 			if (clash) throw new Error(`"${keyword}" is already the keyword of ${clash.key}.`);
 			this.setOptional(item, 'keyword', keyword);
@@ -80,9 +71,9 @@ export class PropertyDefinitions {
 	}
 
 	async move(key: string, toIndex: number): Promise<void> {
-		const from = this.items.findIndex((item) => item.key.toLowerCase() === key.toLowerCase());
+		const from = this.indexOf(key);
 		if (from < 0) return;
-		const target = Math.max(0, Math.min(this.items.length - 1, toIndex));
+		const target = Num.clamp(toIndex, 0, this.items.length - 1);
 		if (target === from) return;
 		const [item] = this.items.splice(from, 1);
 		if (item) this.items.splice(target, 0, item);
@@ -90,7 +81,7 @@ export class PropertyDefinitions {
 	}
 
 	async remove(key: string): Promise<void> {
-		const index = this.items.findIndex((item) => item.key.toLowerCase() === key.toLowerCase());
+		const index = this.indexOf(key);
 		if (index < 0) return;
 		this.items.splice(index, 1);
 		await this.save();
@@ -98,6 +89,10 @@ export class PropertyDefinitions {
 
 	toJSON(): PropertyDefinition[] {
 		return this.items.map((item) => ({ ...item }));
+	}
+
+	private indexOf(key: string): number {
+		return this.items.findIndex((item) => Str.same(item.key, key));
 	}
 
 	private require(key: string): PropertyDefinition {

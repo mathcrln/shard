@@ -1,5 +1,5 @@
 import type { NoteModel } from '@/models/note-model';
-import { Folded } from '@/text/fold';
+import { Str } from '@/utils/str';
 
 export type ModelIntent =
 	| { model: NoteModel; action: 'list'; value: '' }
@@ -18,14 +18,14 @@ export function parseModelIntent(query: string, models: readonly NoteModel[]): M
 		if (!scoped.remainder) return { model: scoped.model, action: 'list', value: '' };
 
 		const first = queryWords(scoped.remainder)[0];
-		if (first && CREATE_VERBS.has(Folded.of(first.value).text)) {
+		if (first && CREATE_VERBS.has(Str.fold(first.value))) {
 			return { model: scoped.model, action: 'create', value: scoped.remainder.slice(first.end).trim() };
 		}
 		return { model: scoped.model, action: 'search', value: scoped.remainder };
 	}
 
 	const verb = queryWords(query)[0];
-	if (!verb || !CREATE_VERBS.has(Folded.of(verb.value).text)) return null;
+	if (!verb || !CREATE_VERBS.has(Str.fold(verb.value))) return null;
 	const afterVerb = matchSelector(query.slice(verb.end).trimStart(), selectors);
 	return afterVerb ? { model: afterVerb.model, action: 'create', value: afterVerb.remainder.trim() } : null;
 }
@@ -44,8 +44,7 @@ function matchSelector(query: string, selectors: readonly Selector[]): { model: 
 const CREATE_VERBS = new Set(['create', 'add', 'new']);
 
 function selectorsFor(model: NoteModel, value: string): Selector[] {
-	const folded = Folded.of(value.trim()).text.trim().replace(/\s+/gu, ' ');
-	const words = folded.split(' ').filter(Boolean);
+	const words = Str.words(Str.fold(value));
 	const last = words[words.length - 1];
 	if (!last) return [];
 	const variants = new Set([last, plural(last), singular(last)]);
@@ -77,5 +76,5 @@ function queryWords(query: string): WordRange[] {
 
 function startsWithSelector(words: readonly WordRange[], selectorWords: readonly string[]): boolean {
 	if (!selectorWords.length || words.length < selectorWords.length) return false;
-	return selectorWords.every((word, index) => Folded.of(words[index]?.value ?? '').text === word);
+	return selectorWords.every((word, index) => Str.fold(words[index]?.value ?? '') === word);
 }

@@ -1,6 +1,6 @@
 import type { ModelRule, NoteModel, PropertyOperator, RuleType } from '@/models/note-model';
 import type { CreationDefaults } from '@/models/note-creation';
-import { Folded } from '@/text/fold';
+import { Str } from '@/utils/str';
 
 const RESERVED_PREFIXES = ['>', '#', '@', '['];
 const PROPERTY_OPERATORS: readonly PropertyOperator[] = ['exists', 'equals', 'contains'];
@@ -8,14 +8,11 @@ const PROPERTY_OPERATORS: readonly PropertyOperator[] = ['exists', 'equals', 'co
 export function nameProblem(value: string, models: readonly NoteModel[], exceptId?: string): string | undefined {
 	const name = value.trim();
 	if (!name) return 'Enter a model name.';
-	const key = normalizeLabel(name);
 	const own = models.find((model) => model.id === exceptId);
-	if (own?.keywords.some((keyword) => normalizeLabel(keyword.trim()) === key)) {
+	if (own?.keywords.some((keyword) => Str.same(keyword, name))) {
 		return 'A model name cannot repeat one of its keywords.';
 	}
-	if (
-		models.some((model) => model.id !== exceptId && modelLabels(model).some((label) => normalizeLabel(label.trim()) === key))
-	) {
+	if (models.some((model) => model.id !== exceptId && modelLabels(model).some((label) => Str.same(label, name)))) {
 		return 'This name is already used by another model or keyword.';
 	}
 	return undefined;
@@ -23,7 +20,6 @@ export function nameProblem(value: string, models: readonly NoteModel[], exceptI
 
 export function keywordsProblem(values: readonly string[], models: readonly NoteModel[], exceptId?: string): string | undefined {
 	const own = models.find((model) => model.id === exceptId);
-	const ownName = own ? normalizeLabel(own.name.trim()) : undefined;
 	const local = new Set<string>();
 
 	for (const value of values) {
@@ -33,16 +29,12 @@ export function keywordsProblem(values: readonly string[], models: readonly Note
 			return 'Keywords cannot begin with a reserved scope prefix.';
 		}
 
-		const folded = normalizeLabel(keyword);
-		if (local.has(folded)) return 'A keyword cannot be repeated within a model.';
-		local.add(folded);
+		const label = normalizeLabel(keyword);
+		if (local.has(label)) return 'A keyword cannot be repeated within a model.';
+		local.add(label);
 
-		if (ownName === folded) return 'A keyword cannot repeat its model name.';
-		if (
-			models.some(
-				(model) => model.id !== exceptId && modelLabels(model).some((label) => normalizeLabel(label.trim()) === folded)
-			)
-		) {
+		if (own && Str.same(own.name, keyword)) return 'A keyword cannot repeat its model name.';
+		if (models.some((model) => model.id !== exceptId && modelLabels(model).some((other) => Str.same(other, keyword)))) {
 			return 'This keyword is already used by another model or name.';
 		}
 	}
@@ -84,7 +76,7 @@ export function isCreationDefaults(value: unknown): value is CreationDefaults {
 }
 
 export function normalizeLabel(value: string): string {
-	return Folded.of(value.trim().replace(/\s+/gu, ' ')).text;
+	return Str.fold(Str.squish(value));
 }
 
 export function cloneModel(model: NoteModel): NoteModel {
@@ -101,6 +93,6 @@ function modelLabels(model: NoteModel): string[] {
 	return [model.name, ...model.keywords];
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+export function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

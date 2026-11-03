@@ -5,6 +5,7 @@ import type { ModelRule, NoteModel, PropertyOperator, RuleType } from '@/models/
 import type { FilterChoice } from '@/ui/settings/filters/filter-choice';
 import { useFilters } from '@/ui/settings/filters/filter-context';
 import { SuggestedInput } from '@/ui/settings/filters/suggested-input';
+import { Queue } from '@/utils/queue';
 
 type Props = {
 	model: NoteModel;
@@ -80,7 +81,7 @@ type RowProps = {
 function ConditionRow({ rule, onUpdate, onRemove }: RowProps) {
 	const { catalog } = useFilters();
 	const latest = useRef(rule);
-	const queue = useRef(Promise.resolve());
+	const [saves] = useState(() => new Queue());
 	const pending = useRef(0);
 	const removingRef = useRef(false);
 	const [busy, setBusy] = useState(false);
@@ -101,9 +102,8 @@ function ConditionRow({ rule, onUpdate, onRemove }: RowProps) {
 		latest.current = next;
 		pending.current += 1;
 		setBusy(true);
-		queue.current = queue.current
-			.catch(() => undefined)
-			.then(() => onUpdate(next))
+		void saves
+			.add(() => onUpdate(next))
 			.catch((error: unknown) => {
 				new Notice(error instanceof Error ? error.message : 'Could not save this filter.');
 			})

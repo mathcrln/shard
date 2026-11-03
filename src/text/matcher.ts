@@ -1,5 +1,6 @@
 import { Folded } from '@/text/fold';
 import { mergeRanges, type Range } from '@/text/range';
+import { Str } from '@/utils/str';
 
 export type Match = { score: number; ranges: Range[] };
 
@@ -13,8 +14,8 @@ export class Matcher {
 	) {}
 
 	static of(query: string): Matcher {
-		const foldedQuery = Folded.of(query).text.trim().replace(/\s+/gu, ' ');
-		return new Matcher(foldedQuery.split(/\s+/).filter(Boolean), foldedQuery);
+		const foldedQuery = Str.squish(Str.fold(query));
+		return new Matcher(Str.words(foldedQuery), foldedQuery);
 	}
 
 	get isEmpty(): boolean {
@@ -36,13 +37,9 @@ export class Matcher {
 		return {
 			score:
 				founds.reduce((total, found) => total + found.score, 0) / founds.length +
-				(this.normalizedText(folded.text) === this.fullQuery ? EXACT_TEXT_BONUS : 0),
+				(Str.squish(folded.text) === this.fullQuery ? EXACT_TEXT_BONUS : 0),
 			ranges: mergeRanges(founds.flatMap((found) => found.ranges.map((range) => folded.original(range)))),
 		};
-	}
-
-	private normalizedText(value: string): string {
-		return value.trim().replace(/\s+/gu, ' ');
 	}
 }
 

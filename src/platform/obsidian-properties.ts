@@ -5,7 +5,6 @@ type TypeManager = {
 	getAllProperties?: () => Record<string, { name?: string; type?: string } | undefined>;
 };
 
-/** Reads the properties Obsidian knows about: registered types first, then frontmatter keys in use. */
 export class ObsidianProperties {
 	constructor(private readonly app: App) {}
 

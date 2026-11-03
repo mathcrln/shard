@@ -3,6 +3,7 @@ import type { MouseEvent } from 'react';
 import { Menu, Notice, setIcon } from 'obsidian';
 import type { NoteModels } from '@/models/note-models';
 import type { ObservedProperty, PropertyChanges, PropertyDefinition, PropertyDefinitions } from '@/models/property-definitions';
+import { Str } from '@/utils/str';
 
 type Props = {
 	definitions: PropertyDefinitions;
@@ -55,7 +56,7 @@ export function PropertySettings({ definitions, models, observed, revision }: Pr
 				<span className='shard-model-heading'>
 					<span className='shard-model-card-title'>Manage properties</span>
 					<span className='shard-model-summary-detail'>
-						{definitions.all.length} properties · {linked} linked to a model
+						{Str.quantity(definitions.all.length, 'property', { plural: 'properties' })} · {linked} linked to a model
 					</span>
 				</span>
 				<span className='shard-model-chevron' aria-hidden='true' />

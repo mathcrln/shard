@@ -1,6 +1,7 @@
 import { getLinkpath, moment, TFolder, type App, type TFile } from 'obsidian';
 import type { NoteCreation } from '@/models/note-creation';
-import { sanitizeTitle } from '@/models/note-title';
+import { Path } from '@/utils/path';
+import { Str } from '@/utils/str';
 
 const INVALID_FILENAME_CHARACTERS = /[<>:"/\\|?*\p{Cc}]/u;
 const WINDOWS_DEVICE_NAME = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?$/iu;
@@ -9,7 +10,7 @@ export class ObsidianNoteCreation {
 	constructor(private readonly app: App) {}
 
 	async create(input: NoteCreation): Promise<TFile> {
-		const title = validateTitle(sanitizeTitle(input.title));
+		const title = validateTitle(Str.filename(input.title));
 		const requestedFolder = input.folder.trim();
 		const folder = validateFolder(
 			requestedFolder
@@ -55,9 +56,7 @@ export class ObsidianNoteCreation {
 	}
 
 	private async ensureFolders(path: string): Promise<void> {
-		let current = '';
-		for (const segment of path.split('/')) {
-			current = current ? `${current}/${segment}` : segment;
+		for (const current of [...Path.ancestors(path), path]) {
 			const existing = this.app.vault.getAbstractFileByPath(current);
 			if (existing instanceof TFolder) continue;
 			if (existing) throw new Error(`Cannot create notes in "${path}": "${current}" is a file.`);
@@ -111,12 +110,7 @@ function validateFolder(input: string): string {
 }
 
 function validateVaultPath(path: string, label: string): void {
-	if (
-		path.startsWith('/') ||
-		path.includes('\\') ||
-		/^[a-z][a-z\d+.-]*:\/\//iu.test(path) ||
-		path.split('/').some((segment) => !segment || segment === '.' || segment === '..')
-	) {
+	if (!Path.isSafe(path)) {
 		throw new Error(`${label} must be a vault-relative path without . or .. segments.`);
 	}
 }

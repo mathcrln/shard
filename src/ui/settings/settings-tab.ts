@@ -94,7 +94,7 @@ export class SettingsTab extends PluginSettingTab {
 
 	getControlValue(key: string): unknown {
 		const values = this.options.settings.toJSON();
-		return Object.prototype.hasOwnProperty.call(values, key) ? values[key as keyof ShardSettings] : undefined;
+		return Object.hasOwn(values, key) ? values[key as keyof ShardSettings] : undefined;
 	}
 
 	async setControlValue(key: string, value: unknown): Promise<void> {
