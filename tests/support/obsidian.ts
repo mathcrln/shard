@@ -184,6 +184,24 @@ export abstract class SuggestModal<T> extends Modal {
 	}
 }
 
+export abstract class AbstractInputSuggest<T> {
+	limit = 100;
+
+	constructor(
+		readonly app: unknown,
+		readonly inputEl: HTMLInputElement
+	) {}
+
+	setValue(value: string): void {
+		this.inputEl.value = value;
+	}
+	close(): void {}
+
+	protected abstract getSuggestions(query: string): T[] | Promise<T[]>;
+	abstract renderSuggestion(value: T, element: HTMLElement): void;
+	abstract selectSuggestion(value: T, event: MouseEvent | KeyboardEvent): void;
+}
+
 export class Keymap {
 	static isModifier(event: MouseEvent | KeyboardEvent, modifier: string): boolean {
 		return modifier === 'Mod' && (Platform.isMacOS ? event.metaKey : event.ctrlKey);

@@ -6,19 +6,22 @@ import type { SettingsTab } from '@/ui/settings/settings-tab';
 import { Platform } from './support/obsidian';
 
 describe('Shard plugin lifecycle', () => {
-	it('registers the existing open-bar command without a default hotkey', async () => {
+	it('registers the entry commands without default hotkeys', async () => {
 		const { commands } = await GivenPlugin();
 
-		expect(commands).toHaveLength(1);
-		expect(commands[0]).toMatchObject({ id: 'open-bar', name: 'Open bar' });
-		expect(commands[0]?.hotkeys).toBeUndefined();
+		expect(commands.map(({ id, name }) => ({ id, name }))).toEqual([
+			{ id: 'open-bar', name: 'Open bar' },
+			{ id: 'open-files', name: 'Open files' },
+			{ id: 'open-commands', name: 'Open commands' },
+		]);
+		expect(commands.every((command) => command.hotkeys === undefined)).toBe(true);
 	});
 
 	it.each([false, true])('opens notes without close buttons on mobile=%s', async (mobile) => {
 		const { plugin, commands } = await GivenPlugin(mobile);
 		WhenOpening(commands);
 		expect(plugin.app).toBeDefined();
-		expect(document.querySelector('input[aria-label="Search notes and commands"]')).not.toBeNull();
+		expect(document.activeElement?.getAttribute('aria-label')).toMatch(/^Search /u);
 		expect(document.querySelector('.modal-close-button')).toBeNull();
 		expect(document.querySelector('.shard-close')).toBeNull();
 	});
@@ -42,7 +45,7 @@ describe('Shard plugin lifecycle', () => {
 
 		await tab?.setControlValue('recentNotes', 5);
 
-		expect(saved).toEqual([{ searchHeadings: true, commandsOnOpen: true, recentNotes: 5 }]);
+		expect(saved).toEqual([expect.objectContaining({ searchHeadings: true, commandsOnOpen: true, recentNotes: 5 })]);
 	});
 
 	it('loads saved settings', async () => {

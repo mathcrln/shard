@@ -13,8 +13,11 @@ afterEach(() => {
 });
 
 describe('BarView', () => {
-	it('shows a runnable command immediately on opening', () => {
-		const { container, commands, workspace } = GivenView({ commands: [{ id: 'app:new', name: 'Create new note' }] });
+	it('runs a highlighted command from the command prefix', () => {
+		const { container, commands, workspace } = GivenView({
+			commands: [{ id: 'app:new', name: 'Create new note' }],
+			query: '>',
+		});
 
 		expect(container.querySelector('[role="option"][aria-selected="true"]')?.textContent).toContain('Create new note');
 		const run = [...container.querySelectorAll('button')].find((button) => button.textContent?.includes('Run command'));
@@ -29,7 +32,7 @@ describe('BarView', () => {
 		const { container, input } = GivenView();
 
 		expect(document.activeElement).toBe(input);
-		expect(input.getAttribute('aria-label')).toBe('Search notes and commands');
+		expect(input.getAttribute('aria-label')).toBe('Search files');
 		expect(container.querySelector('[role="option"][aria-selected="true"]')?.textContent).toContain('Ada Lovelace');
 		expect(document.getElementById(input.getAttribute('aria-activedescendant') ?? '')?.textContent).toContain('Ada Lovelace');
 		expect(container.textContent).not.toContain('to navigate');
@@ -41,7 +44,7 @@ describe('BarView', () => {
 		WhenTyping(input, 'no such note');
 
 		expect(container.querySelectorAll('[role="option"]')).toHaveLength(0);
-		expect(container.querySelector('[role="status"]')?.textContent).toContain('No results found');
+		expect(container.querySelector('[role="status"]')?.textContent).toContain('No results');
 		expect(input.hasAttribute('aria-activedescendant')).toBe(false);
 	});
 
@@ -84,13 +87,13 @@ describe('BarView', () => {
 	});
 });
 
-function GivenView(options: Parameters<typeof GivenSearch>[0] = {}) {
+function GivenView({ query = '', ...options }: Parameters<typeof GivenSearch>[0] & { query?: string } = {}) {
 	const { search, workspace, commands } = GivenSearch({
 		notes: [GivenNote('Ada Lovelace', { folder: 'People' }), GivenNote('Alan Turing')],
 		recents: ['People/Ada Lovelace.md', 'Alan Turing.md'],
 		...options,
 	});
-	const bar = new BarState(search);
+	const bar = new BarState(search, { query });
 	const container = document.createElement('div');
 	document.body.append(container);
 	const root = createRoot(container);

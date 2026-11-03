@@ -3,10 +3,10 @@ import { expect, it, vi } from 'vitest';
 import { Settings } from '@/models/plugin-settings';
 import { SettingsTab } from '@/ui/settings/settings-tab';
 
-it('groups the opening and search settings', () => {
+it('groups the search preferences', () => {
 	const { tab } = GivenSettingsTab();
 
-	expect(tab.getSettingDefinitions().map(headingOf)).toEqual(['When the bar opens', 'Search']);
+	expect(tab.getSettingDefinitions().map(headingOf)).toEqual(['Search preferences']);
 });
 
 it('reads controls from the settings', () => {
@@ -14,6 +14,7 @@ it('reads controls from the settings', () => {
 
 	expect(tab.getControlValue('commandsOnOpen')).toBe(true);
 	expect(tab.getControlValue('searchHeadings')).toBe(true);
+	expect(tab.getControlValue('unifiedSearch')).toBe(false);
 	expect(tab.getControlValue('recentNotes')).toBe(4);
 });
 
@@ -44,7 +45,7 @@ it.each([
 function GivenSettingsTab(data: object = {}) {
 	const settings = Settings.from(data);
 	const save = vi.fn(() => Promise.resolve());
-	const tab = new SettingsTab({ app: {} } as Plugin, { settings, save });
+	const tab = new SettingsTab({ app: {}, register: vi.fn() } as unknown as Plugin, { settings, save });
 	tab.getSettingDefinitions();
 
 	return { tab, settings, save };

@@ -10,6 +10,20 @@ if (typeof window !== 'undefined') {
 		detach(this: Element): void {
 			this.remove();
 		},
+		createEl(
+			this: Element,
+			tag: string,
+			{ cls, text, attr = {} }: { cls?: string; text?: string; attr?: Record<string, string> } = {}
+		): HTMLElement {
+			const element = this.appendChild(document.createElement(tag));
+			if (cls) element.className = cls;
+			if (text !== undefined) element.textContent = text;
+			for (const [name, value] of Object.entries(attr)) element.setAttribute(name, value);
+			return element;
+		},
+		setText(this: Element, text: string): void {
+			this.textContent = text;
+		},
 	});
 }
 

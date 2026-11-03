@@ -37,20 +37,30 @@ describe('Search.find', () => {
 			]);
 		});
 
-		it('shows commands on opening, followed by recent notes', () => {
+		it('lists only recent notes on opening outside unified search', () => {
+			const { search } = GivenSearch({
+				notes: [GivenNote('Ada')],
+				recents: ['Ada.md'],
+				commands: [{ id: 'app:new', name: 'Create new note' }],
+			});
+
+			expect(search.find('').map((result) => [result.group, result.title])).toEqual([['Recent', 'Ada']]);
+		});
+
+		it('shows recent notes on opening unified search, followed by commands', () => {
 			const { search, commands } = GivenSearch({
 				notes: [GivenNote('Ada')],
 				recents: ['Ada.md'],
 				commands: [{ id: 'app:new', name: 'Create new note' }],
 			});
 
-			const results = search.find('');
+			const results = search.find('', { mode: 'unified' });
 
 			expect(results.map((result) => [result.group, result.title])).toEqual([
-				['Commands', 'Create new note'],
 				['Recent', 'Ada'],
+				['Commands', 'Create new note'],
 			]);
-			results[0]?.actions[0]?.run();
+			results[1]?.actions[0]?.run();
 			expect(commands.executed).toEqual(['app:new']);
 		});
 
@@ -62,7 +72,7 @@ describe('Search.find', () => {
 				settings: { commandsOnOpen: false },
 			});
 
-			expect(search.find('').map((result) => result.group)).toEqual(['Recent']);
+			expect(search.find('', { mode: 'unified' }).map((result) => result.group)).toEqual(['Recent']);
 		});
 
 		it('lists as many recent notes as the settings allow', () => {
@@ -72,23 +82,37 @@ describe('Search.find', () => {
 			expect(search.find('')).toHaveLength(3);
 		});
 
-		it('limits the opening command list to six', () => {
+		it('limits the opening command list of unified search to six', () => {
 			const { search } = GivenSearch({
 				commands: Array.from({ length: 12 }, (_, index) => ({ id: `command:${index}`, name: `Command ${index}` })),
 			});
 
-			expect(search.find('')).toHaveLength(6);
+			expect(search.find('', { mode: 'unified' })).toHaveLength(6);
 		});
 	});
 
 	describe('commands', () => {
-		it('finds commands before notes and headings, ignoring diacritics', () => {
+		it('finds commands alongside notes and headings in unified search, ignoring diacritics', () => {
 			const { search } = GivenSearch({
 				notes: [GivenNote('Élève', { headings: ['Élève notes'] })],
 				commands: [{ id: 'example:eleve', name: 'Élève command' }],
 			});
 
-			expect(search.find('eleve').map((result) => result.group)).toEqual(['Commands', 'Notes', 'Headings']);
+			expect(
+				search
+					.find('eleve', { mode: 'unified' })
+					.map((result) => result.group)
+					.sort()
+			).toEqual(['Commands', 'Headings', 'Notes']);
+		});
+
+		it('leaves commands out of file search', () => {
+			const { search } = GivenSearch({
+				notes: [GivenNote('Élève', { headings: ['Élève notes'] })],
+				commands: [{ id: 'example:eleve', name: 'Élève command' }],
+			});
+
+			expect(search.find('eleve').map((result) => result.group)).toEqual(['Notes', 'Headings']);
 		});
 
 		it('shows only commands with the command prefix', () => {

@@ -170,7 +170,7 @@ describe('BarState', () => {
 	describe('run', () => {
 		it('closes the palette before executing a command', () => {
 			const { search, commands } = GivenSearch({ commands: [{ id: 'app:new', name: 'Create new note' }] });
-			const bar = new BarState(search);
+			const bar = new BarState(search, { query: '>' });
 			let executedBeforeClose: string[] = ['not closed'];
 
 			bar.run(() => {
