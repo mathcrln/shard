@@ -86,7 +86,7 @@ export class ObsidianFilterCatalog implements FilterCatalog {
 		const snapshot = this.snapshot();
 		const values = propertyValues(snapshot, property);
 		const choices = values.map((entry) => choiceForValue(String(entry.value), entry.kind));
-		const hasLinks = values.some((entry) => typeof entry.value === 'string' && Wikilink.contains(entry.value));
+		const hasLinks = choices.some((choice) => Wikilink.contains(choice.value));
 		const startsWithLink = /^\s*\[\[/u.test(query);
 		if (hasLinks || startsWithLink) choices.push(...this.notes(queryForLinks(query)));
 

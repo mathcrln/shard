@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { NoteModel } from '@/models/note-model';
 import type { Note } from '@/search/note';
+import { ShardException } from '@/exceptions/shard-exception';
 
 const PREVIEW_LIMIT = 50;
 
@@ -38,7 +39,7 @@ export function ModelPreview({ model, findNotes, openNote, revision }: Props) {
 				setPreview({
 					signature: membershipSignature,
 					notes: [],
-					error: error instanceof Error ? error.message : 'Could not load matching notes.',
+					error: ShardException.from(error).message,
 				});
 			}
 		}, 100);

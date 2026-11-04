@@ -2,6 +2,7 @@ import type { ModelRule, NoteModel } from '@/models/note-model';
 import type { Note } from '@/search/note';
 import { Path } from '@/utils/path';
 import { Str } from '@/utils/str';
+import { Wikilink } from '@/utils/wikilink';
 
 export class Membership {
 	static matches(model: NoteModel, note: Note): boolean {
@@ -96,14 +97,14 @@ function matchesProperty(rule: Extract<ModelRule, { type: 'property' }>, propert
 		return (Array.isArray(actual) ? actual : [actual]).some((value) => equalScalar(value, expected));
 	}
 
-	if (typeof actual === 'string') return Str.fold(normalizeLink(actual)).includes(Str.fold(normalizeLink(expected)));
+	if (typeof actual === 'string') return Str.fold(Wikilink.linktext(actual)).includes(Str.fold(Wikilink.linktext(expected)));
 	if (Array.isArray(actual)) return actual.some((value) => equalScalar(value, expected));
 	return false;
 }
 
 function equalScalar(value: unknown, expected: string): boolean {
 	const scalar = scalarText(value);
-	return scalar !== null && Str.fold(scalar) === Str.fold(normalizeLink(expected));
+	return scalar !== null && Str.fold(scalar) === Str.fold(Wikilink.linktext(expected));
 }
 
 function propertyOf(properties: Readonly<Record<string, unknown>>, name: string): { found: boolean; value?: unknown } {
@@ -113,16 +114,9 @@ function propertyOf(properties: Readonly<Record<string, unknown>>, name: string)
 }
 
 function scalarText(value: unknown): string | null {
-	if (typeof value === 'string') return normalizeLink(value);
+	if (typeof value === 'string') return Wikilink.linktext(value);
 	if (typeof value === 'number' || typeof value === 'boolean') return String(value);
 	return null;
-}
-
-function normalizeLink(value: string): string {
-	const trimmed = value.trim();
-	const wikiLink = trimmed.match(/^!?\[\[([\s\S]*?)\]\]$/u);
-	if (!wikiLink) return trimmed;
-	return (wikiLink[1] ?? '').split('|', 1)[0]?.trim() ?? '';
 }
 
 function matchesLink(value: string, links: readonly string[]): boolean {
@@ -132,8 +126,7 @@ function matchesLink(value: string, links: readonly string[]): boolean {
 }
 
 function normalizeLinkTarget(value: string): string {
-	const target = normalizeLink(value).split('#', 1)[0]?.trim().replace(/\\/gu, '/') ?? '';
-	return Str.fold(target.replace(/\.md$/iu, ''));
+	return Str.fold(Path.normalize(Wikilink.path(value)).replace(/\.md$/iu, ''));
 }
 
 function normalizeTag(value: string): string {

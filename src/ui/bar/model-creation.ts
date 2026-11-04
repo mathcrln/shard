@@ -1,6 +1,7 @@
 import type { CreateModelNote, ModelCreator } from '@/models/note-creation';
 import type { NoteModel } from '@/models/note-model';
 import { parseModelIntent } from '@/models/model-intent';
+import { ShardException } from '@/exceptions/shard-exception';
 
 type Options = {
 	create: CreateModelNote;
@@ -49,7 +50,7 @@ export class ModelCreation implements ModelCreator {
 			if (generation === this.generation) this.options.completed();
 		} catch (error) {
 			if (generation === this.generation) {
-				this.error = error instanceof Error ? error.message : 'Could not create this note.';
+				this.error = ShardException.from(error).message;
 			}
 		} finally {
 			if (generation === this.generation) {

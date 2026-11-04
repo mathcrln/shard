@@ -1,4 +1,4 @@
-import { Modal, Notice, Platform, type App } from 'obsidian';
+import { Modal, Platform, type App } from 'obsidian';
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { BarView } from '@/ui/bar/bar-view';
@@ -7,6 +7,7 @@ import { keysOf } from '@/ui/bar/shortcut';
 import { shortcuts, type Shortcut } from '@/search/action';
 import type { CreateModelNote } from '@/models/note-creation';
 import { ModelCreation } from '@/ui/bar/model-creation';
+import { ShardException } from '@/exceptions/shard-exception';
 
 export class BarModal extends Modal {
 	private root: Root | null = null;
@@ -94,7 +95,7 @@ export class BarModal extends Modal {
 			else this.bar.run(() => this.close());
 			this.render();
 		} catch (error) {
-			new Notice(error instanceof Error ? error.message : 'Could not run this action.');
+			ShardException.render(error);
 		}
 		return false;
 	}

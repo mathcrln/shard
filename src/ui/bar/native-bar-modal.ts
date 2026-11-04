@@ -1,4 +1,4 @@
-import { Keymap, Menu, Notice, Platform, SuggestModal } from 'obsidian';
+import { Keymap, Menu, Platform, SuggestModal } from 'obsidian';
 import type { App } from 'obsidian';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -13,6 +13,7 @@ import { NativeResult } from '@/ui/bar/native-result';
 import { keysOf, labelOf } from '@/ui/bar/shortcut';
 import type { CreateModelNote } from '@/models/note-creation';
 import { ModelCreation } from '@/ui/bar/model-creation';
+import { ShardException } from '@/exceptions/shard-exception';
 
 export class NativeBarModal extends SuggestModal<Result> {
 	private readonly roots = new Set<Root>();
@@ -116,7 +117,7 @@ export class NativeBarModal extends SuggestModal<Result> {
 			}
 			return results;
 		} catch (error) {
-			new Notice(error instanceof Error ? error.message : 'Could not search.');
+			ShardException.render(error);
 			return [];
 		}
 	}
@@ -176,7 +177,7 @@ export class NativeBarModal extends SuggestModal<Result> {
 		try {
 			action?.run();
 		} catch (error) {
-			new Notice(error instanceof Error ? error.message : 'Could not run this action.');
+			ShardException.render(error);
 		}
 	}
 

@@ -2,17 +2,55 @@ import { describe, expect, it } from 'vitest';
 import { Path } from '@/utils/path';
 
 describe('Path', () => {
-	describe('isSafe', () => {
-		it.each(['a.png', 'Attachments/2026/a b.png', 'notes/.hidden/a.png', '50%.png'])('accepts %j', (path) => {
-			expect(Path.isSafe(path)).toBe(true);
+	describe('normalize', () => {
+		it.each([
+			['Books', 'Books'],
+			['/Books//2024/', 'Books/2024'],
+			['Books\\2024', 'Books/2024'],
+			['  Books / 2024  ', 'Books/2024'],
+			['/', ''],
+			['', ''],
+		])('normalizes %j to %j', (path, expected) => {
+			expect(Path.normalize(path)).toBe(expected);
+		});
+	});
+
+	describe('isPortable', () => {
+		it.each(['Ada Lovelace', 'Books/2024', 'Notes/.hidden', '50% done', 'Élève'])('accepts %j', (path) => {
+			expect(Path.isPortable(path)).toBe(true);
 		});
 
-		it.each(['', '/a.png', 'a/', 'a//b', './a', 'a/../b', '..', 'a\\b', 'a:b', 'a?b', 'a*b', 'a|b', 'a"b', 'a<b', 'a\nb'])(
-			'rejects %j',
-			(path) => {
-				expect(Path.isSafe(path)).toBe(false);
-			}
-		);
+		it.each([
+			'',
+			'.',
+			'..',
+			'Books/../Secrets',
+			'Books//2024',
+			'Ends with dot.',
+			'Ends with space ',
+			'CON',
+			'Books/lpt1.txt',
+			'a:b',
+			'a?b',
+			'a*b',
+			'a|b',
+			'a"b',
+			'a<b',
+			'a\\b',
+			'a\nb',
+		])('rejects %j', (path) => {
+			expect(Path.isPortable(path)).toBe(false);
+		});
+	});
+
+	describe('join', () => {
+		it('joins segments with slashes', () => {
+			expect(Path.join('Books', '2024', 'Dune.md')).toBe('Books/2024/Dune.md');
+		});
+
+		it('skips empty segments, such as the vault root', () => {
+			expect(Path.join('', 'Dune.md')).toBe('Dune.md');
+		});
 	});
 
 	describe('isWithin', () => {
@@ -33,17 +71,6 @@ describe('Path', () => {
 
 		it('lists nothing for a top-level file', () => {
 			expect(Path.ancestors('c.png')).toEqual([]);
-		});
-	});
-
-	describe('relative', () => {
-		it.each([
-			['notes/a.md', 'Attachments/b.png', '../Attachments/b.png'],
-			['notes/a.md', 'notes/img/b.png', 'img/b.png'],
-			['a.md', 'Attachments/b.png', 'Attachments/b.png'],
-			['notes/deep/a.md', 'notes/b.png', '../b.png'],
-		])('links from %j to %j as %j', (from, to, expected) => {
-			expect(Path.relative(from, to)).toBe(expected);
 		});
 	});
 });

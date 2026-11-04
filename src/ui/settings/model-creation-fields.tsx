@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react';
-import { Notice } from 'obsidian';
 import type { CreationDefaults } from '@/models/note-creation';
 import type { NoteModel } from '@/models/note-model';
 import { useFilters } from '@/ui/settings/filters/filter-context';
 import { SuggestedInput } from '@/ui/settings/filters/suggested-input';
 import { Queue } from '@/utils/queue';
+import { ShardException } from '@/exceptions/shard-exception';
 
 type Props = {
 	model: NoteModel;
@@ -23,11 +23,7 @@ export function ModelCreationFields({ model, onChange }: Props) {
 		if (value === latest.current[field]) return;
 		const next = { ...latest.current, [field]: value };
 		latest.current = next;
-		void saves
-			.add(() => onChange(next))
-			.catch((error: unknown) => {
-				new Notice(error instanceof Error ? error.message : 'Could not save model creation settings.');
-			});
+		void saves.add(() => onChange(next)).catch(ShardException.render);
 	};
 
 	return (

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
-import { Menu, Notice, setIcon } from 'obsidian';
+import { Menu, setIcon } from 'obsidian';
 import type { NoteModels } from '@/models/note-models';
 import type { ObservedProperty, PropertyChanges, PropertyDefinition, PropertyDefinitions } from '@/models/property-definitions';
 import { Str } from '@/utils/str';
+import { ShardException } from '@/exceptions/shard-exception';
 
 type Props = {
 	definitions: PropertyDefinitions;
@@ -32,7 +33,7 @@ export function PropertySettings({ definitions, models, observed, revision }: Pr
 		try {
 			await action();
 		} catch (error) {
-			new Notice(error instanceof Error ? error.message : 'Could not save this property.');
+			ShardException.render(error);
 		}
 		refresh();
 	};

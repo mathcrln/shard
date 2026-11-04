@@ -105,6 +105,18 @@ export class Modal {
 	onClose(): void {}
 }
 
+export class TAbstractFile {
+	path = '';
+	name = '';
+}
+
+export class TFolder extends TAbstractFile {}
+
+export class TFile extends TAbstractFile {
+	basename = '';
+	extension = '';
+}
+
 export const notices: string[] = [];
 
 export class Notice {

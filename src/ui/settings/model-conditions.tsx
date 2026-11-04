@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
-import { Menu, Notice } from 'obsidian';
+import { Menu } from 'obsidian';
 import type { ModelRule, NoteModel, PropertyOperator, RuleType } from '@/models/note-model';
 import type { FilterChoice } from '@/ui/settings/filters/filter-choice';
 import { useFilters } from '@/ui/settings/filters/filter-context';
 import { SuggestedInput } from '@/ui/settings/filters/suggested-input';
 import { Queue } from '@/utils/queue';
+import { ShardException } from '@/exceptions/shard-exception';
 
 type Props = {
 	model: NoteModel;
@@ -22,7 +23,7 @@ export function ModelConditions({ model, onUpdate, onAdd, onRemove, onMatchChang
 		try {
 			await onMatchChange(match);
 		} catch (error) {
-			new Notice(error instanceof Error ? error.message : 'Could not update condition matching.');
+			ShardException.render(error);
 		}
 	};
 	const addCondition = async (): Promise<void> => {
@@ -32,7 +33,7 @@ export function ModelConditions({ model, onUpdate, onAdd, onRemove, onMatchChang
 		try {
 			await onAdd('link');
 		} catch (error) {
-			new Notice(error instanceof Error ? error.message : 'Could not add this condition.');
+			ShardException.render(error);
 		} finally {
 			addingRef.current = false;
 			setAdding(false);
@@ -104,9 +105,7 @@ function ConditionRow({ rule, onUpdate, onRemove }: RowProps) {
 		setBusy(true);
 		void saves
 			.add(() => onUpdate(next))
-			.catch((error: unknown) => {
-				new Notice(error instanceof Error ? error.message : 'Could not save this filter.');
-			})
+			.catch(ShardException.render)
 			.finally(() => {
 				pending.current -= 1;
 				setBusy(pending.current > 0);
@@ -229,7 +228,7 @@ function ConditionRow({ rule, onUpdate, onRemove }: RowProps) {
 		try {
 			await onRemove(rule.id);
 		} catch (error) {
-			new Notice(error instanceof Error ? error.message : 'Could not remove this filter.');
+			ShardException.render(error);
 		} finally {
 			removingRef.current = false;
 			setRemoving(false);

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Notice, setIcon } from 'obsidian';
+import { setIcon } from 'obsidian';
 import type { ModelChanges, ModelRule, NoteModel, RuleType } from '@/models/note-model';
 import type { NoteModels } from '@/models/note-models';
 import type { Note } from '@/search/note';
@@ -8,6 +8,7 @@ import { ModelPreview } from '@/ui/settings/model-preview';
 import { useFilters } from '@/ui/settings/filters/filter-context';
 import { SuggestedInput } from '@/ui/settings/filters/suggested-input';
 import { ModelCreationFields } from '@/ui/settings/model-creation-fields';
+import { ShardException } from '@/exceptions/shard-exception';
 
 type Props = {
 	model: NoteModel;
@@ -66,7 +67,7 @@ export function ModelCard(props: Props) {
 			try {
 				await props.onCreate?.(name.trim());
 			} catch (error) {
-				new Notice(error instanceof Error ? error.message : 'Could not create this model.');
+				ShardException.render(error);
 			} finally {
 				createPending.current = false;
 				setCreating(false);
@@ -77,7 +78,7 @@ export function ModelCard(props: Props) {
 		try {
 			await props.onUpdate?.(model.id, { name: name.trim() });
 		} catch (error) {
-			new Notice(error instanceof Error ? error.message : 'Could not rename this model.');
+			ShardException.render(error);
 		}
 	};
 
@@ -101,7 +102,7 @@ export function ModelCard(props: Props) {
 				setKeywordTouched(false);
 			}
 		} catch (error) {
-			new Notice(error instanceof Error ? error.message : 'Could not save this keyword.');
+			ShardException.render(error);
 		} finally {
 			keywordPending.current = false;
 			setKeywordSaving(false);
@@ -122,7 +123,7 @@ export function ModelCard(props: Props) {
 				await props.onUpdate?.(model.id, { keywords: latestKeywords.filter((value) => value !== removed) });
 			}
 		} catch (error) {
-			new Notice(error instanceof Error ? error.message : 'Could not remove this keyword.');
+			ShardException.render(error);
 		} finally {
 			keywordPending.current = false;
 			setKeywordSaving(false);
@@ -143,7 +144,7 @@ export function ModelCard(props: Props) {
 		try {
 			await props.onRemove?.(model.id);
 		} catch (error) {
-			new Notice(error instanceof Error ? error.message : 'Could not remove this model.');
+			ShardException.render(error);
 		} finally {
 			removePending.current = false;
 			setRemoving(false);
@@ -350,9 +351,7 @@ function ModelIconField({ value, onChange }: { value: string; onChange: (icon: s
 				placeholder='Choose an icon'
 				choices={(query) => catalog.icons(query)}
 				onCommit={(next) => {
-					void onChange(next.trim()).catch((error: unknown) => {
-						new Notice(error instanceof Error ? error.message : 'Could not save this icon.');
-					});
+					void onChange(next.trim()).catch(ShardException.render);
 				}}
 			/>
 		</div>

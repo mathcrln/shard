@@ -1,13 +1,21 @@
-const FORBIDDEN = /[\\<>:"|?*]/;
+const FORBIDDEN = /[\\/<>:"|?*\p{Cc}]/u;
+const WINDOWS_DEVICE = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/iu;
 
 export const Path = {
-	isSafe(path: string): boolean {
-		return (
-			path !== '' &&
-			!FORBIDDEN.test(path) &&
-			[...path].every((character) => character.charCodeAt(0) >= 32) &&
-			path.split('/').every((segment) => segment !== '' && segment !== '.' && segment !== '..')
-		);
+	normalize(path: string): string {
+		return path
+			.split(/[\\/]/u)
+			.map((segment) => segment.trim())
+			.filter(Boolean)
+			.join('/');
+	},
+
+	isPortable(path: string): boolean {
+		return path.split('/').every(isPortableName);
+	},
+
+	join(...segments: string[]): string {
+		return segments.filter(Boolean).join('/');
 	},
 
 	isWithin(path: string, folder: string): boolean {
@@ -19,16 +27,8 @@ export const Path = {
 
 		return segments.map((_, index) => segments.slice(0, index + 1).join('/'));
 	},
-
-	relative(from: string, to: string): string {
-		const base = from.split('/').slice(0, -1);
-		const target = to.split('/');
-
-		while (base.length > 0 && base[0] === target[0]) {
-			base.shift();
-			target.shift();
-		}
-
-		return [...base.map(() => '..'), ...target].join('/');
-	},
 };
+
+function isPortableName(name: string): boolean {
+	return name !== '' && !FORBIDDEN.test(name) && !/[. ]$/u.test(name) && !WINDOWS_DEVICE.test(name);
+}

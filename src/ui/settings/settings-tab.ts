@@ -1,4 +1,4 @@
-import { Component, Notice, PluginSettingTab } from 'obsidian';
+import { Component, PluginSettingTab } from 'obsidian';
 import type { Plugin, SettingDefinitionItem } from 'obsidian';
 import { createElement } from 'react';
 import type { ReactNode } from 'react';
@@ -14,6 +14,7 @@ import type { ObservedProperty, PropertyDefinitions } from '@/models/property-de
 import { searchPreferences } from '@/ui/settings/search-preferences';
 import { FilterContext } from '@/ui/settings/filters/filter-context';
 import { ObsidianFilterCatalog } from '@/platform/obsidian-filter-catalog';
+import { ShardException } from '@/exceptions/shard-exception';
 
 export interface SettingsTabOptions {
 	settings: Settings;
@@ -111,7 +112,7 @@ export class SettingsTab extends PluginSettingTab {
 		try {
 			await this.options.save();
 		} catch (error) {
-			new Notice(error instanceof Error ? error.message : 'Could not save search preferences.');
+			ShardException.render(error);
 		}
 	}
 
@@ -145,8 +146,6 @@ export class SettingsTab extends PluginSettingTab {
 	}
 
 	private openNote(note: Note): void {
-		void this.app.workspace.openLinkText(note.path, '', false).catch((error: unknown) => {
-			new Notice(error instanceof Error ? error.message : 'Could not open this note.');
-		});
+		void this.app.workspace.openLinkText(note.path, '', false).catch(ShardException.render);
 	}
 }
