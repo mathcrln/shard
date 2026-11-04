@@ -3,6 +3,7 @@ import type { FilterCatalog, FilterChoice } from '@/ui/settings/filters/filter-c
 import { Matcher } from '@/text/matcher';
 import { Path } from '@/utils/path';
 import { Str } from '@/utils/str';
+import { Wikilink } from '@/utils/wikilink';
 
 type PropertyEntry = { value: unknown; kind: NonNullable<FilterChoice['kind']> };
 type NoteEntry = { file: TFile; properties: Record<string, unknown>; tags: string[] };
@@ -85,7 +86,7 @@ export class ObsidianFilterCatalog implements FilterCatalog {
 		const snapshot = this.snapshot();
 		const values = propertyValues(snapshot, property);
 		const choices = values.map((entry) => choiceForValue(String(entry.value), entry.kind));
-		const hasLinks = values.some((entry) => containsWikiLink(entry.value));
+		const hasLinks = values.some((entry) => typeof entry.value === 'string' && Wikilink.contains(entry.value));
 		const startsWithLink = /^\s*\[\[/u.test(query);
 		if (hasLinks || startsWithLink) choices.push(...this.notes(queryForLinks(query)));
 
@@ -197,11 +198,6 @@ function uniqueChoices(choices: readonly FilterChoice[]): FilterChoice[] {
 		seen.add(choice.value);
 		return true;
 	});
-}
-
-function containsWikiLink(value: unknown): boolean {
-	if (Array.isArray(value)) return value.some(containsWikiLink);
-	return typeof value === 'string' && /!?\[\[[^\]]+\]\]/u.test(value);
 }
 
 function queryForLinks(query: string): string {

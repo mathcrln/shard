@@ -11,6 +11,7 @@ import {
 	normalizeLabel,
 } from '@/models/model-validation';
 import { Str } from '@/utils/str';
+import { Wikilink } from '@/utils/wikilink';
 
 type StoredModel = {
 	raw: Record<string, unknown>;
@@ -138,7 +139,7 @@ export class NoteModels {
 			if (rule.type === 'tag' && !rule.value.trim().replace(/^#+/u, '').replace(/\/+$/u, '')) {
 				issues.push('A tag rule needs a tag name.');
 			}
-			if (rule.type === 'link' && !hasLinkTarget(rule.value)) issues.push('A link rule needs a note link.');
+			if (rule.type === 'link' && !Wikilink.path(rule.value)) issues.push('A link rule needs a note link.');
 			if (rule.type === 'property' && !rule.property.trim()) issues.push('A property rule needs a property name.');
 			if (rule.type === 'property' && rule.operator !== 'exists' && !rule.value.trim()) {
 				issues.push('A property value rule needs a value.');
@@ -328,11 +329,4 @@ function describeProblem(value: unknown, problem: string, index: number): string
 
 function recordName(value: Record<string, unknown>): string {
 	return typeof value.name === 'string' && value.name.trim() ? value.name.trim() : 'Unnamed';
-}
-
-function hasLinkTarget(value: string): boolean {
-	const trimmed = value.trim();
-	const wikiLink = trimmed.match(/^!?\[\[([\s\S]*?)\]\]$/u);
-	const target = (wikiLink?.[1] ?? trimmed).split('|', 1)[0]?.split('#', 1)[0]?.trim();
-	return !!target;
 }
